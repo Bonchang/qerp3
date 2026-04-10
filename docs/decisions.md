@@ -8,21 +8,22 @@
   - 배포 타겟(Vercel/유사 플랫폼)과 궁합이 좋음
 
 ## ADR-002 Backend Framework
-- **Decision**: Node.js + NestJS 사용
+- **Decision**: Java + Spring Boot 사용
 - **Why**:
-  - 모듈 경계(주문/포트폴리오/시장데이터) 분리가 명확
-  - DTO/검증/테스트 패턴이 일관적
-  - 팀 확장 시 유지보수성이 높음
+  - 금융/포트폴리오 중심 백엔드 도메인에 강한 적합성
+  - 트랜잭션 처리와 데이터 정합성 보장에 유리
+  - 주문/체결/포지션 같은 도메인 모델을 명시적으로 설계하기 좋음
 
 ## ADR-003 Database
 - **Decision**: PostgreSQL 단일 인스턴스 시작
 - **Why**:
   - 관계형 데이터(주문, 체결, 포지션)에 적합
+  - Spring Boot + Flyway 조합으로 스키마 변경 이력 관리가 명확
   - 관리형 서비스 선택지가 풍부
   - MVP 단계에서 단일 저장소가 단순성과 운영성을 높임
 
 ## ADR-004 Worker Strategy
-- **Decision**: 독립 `quant-worker` 프로세스 + 단순 큐/스케줄 방식
+- **Decision**: 독립 **Python** `quant-worker` 프로세스 + 단순 큐/스케줄 방식
 - **Why**:
   - API 응답 경로와 연산 경로를 분리해 안정성 확보
   - 초기에는 복잡한 이벤트 인프라 없이도 운영 가능

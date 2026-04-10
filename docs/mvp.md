@@ -32,7 +32,7 @@
 ## 4) 배포 타겟
 - 우선순위: **단일 클라우드의 관리형 서비스 조합**
   - Frontend: 정적 호스팅 + CDN
-  - Backend: 컨테이너 기반 앱 서비스
-  - Quant Worker: 스케줄/큐 기반 워커 런타임
+  - Backend: Java + Spring Boot 컨테이너 기반 앱 서비스
+  - Quant Worker: Python 스케줄/큐 기반 워커 런타임
   - Database: 관리형 PostgreSQL
 - 초기 목표는 저비용/간단한 운영이며, 트래픽 증가 시 점진 확장
