@@ -55,6 +55,8 @@
 - `NOT_FOUND` (404)
 - `ORDER_NOT_CANCELLABLE` (409)
 - `INSUFFICIENT_CASH` (409)
+- `INSUFFICIENT_POSITION_QUANTITY` (409)
+- `MARKET_DATA_UNAVAILABLE` (409)
 - `INTERNAL_ERROR` (500)
 
 ---
@@ -78,6 +80,7 @@
 - `quantity`: `> 0`, 소수점 최대 4자리
 - `limitPrice`(LIMIT 전용): `> 0`, 소수점 최대 2자리
 - 지원하지 않는 `side`/`orderType` 값은 400
+- `SELL` 주문 수량이 보유 수량을 초과하면 409 `INSUFFICIENT_POSITION_QUANTITY`
 
 ### 3.4 취소 규칙
 - `PENDING`, `PARTIALLY_FILLED` 상태만 취소 가능
@@ -117,13 +120,15 @@
 
 ### 5.1 공통 가정
 - 단일 기준가 `referencePrice`를 체결 시점에 사용
+- `referencePrice`는 Backend 시장 데이터 캐시의 마지막 체결가(last trade price)를 사용
+- 해당 심볼 기준가가 캐시에 없으면 주문 생성 시 409 `MARKET_DATA_UNAVAILABLE`
 - 수수료/세금/슬리피지 = 0 (MVP 단순화)
 - 체결 엔진은 주문 접수 직후 1회 평가
 
 ### 5.2 MARKET 주문
 - 정책: 항상 즉시 전량 체결
 - 체결가: `referencePrice`
-- 예외: 매수 시 필요 현금 부족이면 `REJECTED(INSUFFICIENT_CASH)`
+- 예외: 매수 시 필요 현금 부족이면 409 `INSUFFICIENT_CASH` (주문 미생성)
 
 ### 5.3 LIMIT 주문
 - `BUY`: `referencePrice <= limitPrice`면 즉시 전량 체결, 아니면 `PENDING`
@@ -180,6 +185,8 @@
 ### Error Cases
 - 400 `VALIDATION_ERROR`
 - 409 `INSUFFICIENT_CASH`
+- 409 `INSUFFICIENT_POSITION_QUANTITY`
+- 409 `MARKET_DATA_UNAVAILABLE`
 
 ---
 
@@ -348,5 +355,11 @@
 - Service 레이어: 상태 전이/체결 시뮬레이션/포트폴리오 계산 책임
 - Repository 레이어: 영속성 접근
 - Flyway는 후속 단계에서 스키마 버전 관리용으로 적용
+
+## 9) MVP Locked Decisions
+- `referencePrice` 소스: Backend 시장 데이터 캐시의 마지막 체결가(last trade price)
+- `PARTIALLY_FILLED` 처리: 응답 enum에는 유지, **MVP 기본 실행 로직에서는 생성하지 않음**
+- `initialEquity` 정책: 사용자별 `100000.00 USD` 고정, 첫 포트폴리오 접근 시 1회 초기화
+- `baseCurrency`: `USD` 고정
 
 이 문서는 계약 우선(Contract-first) 구현을 위한 기준선입니다.
