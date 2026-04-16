@@ -12,6 +12,7 @@ import com.qerp.domain.order.OrderType;
 import com.qerp.domain.portfolio.Portfolio;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -22,24 +23,25 @@ import java.util.Optional;
 @Service
 public class OrderService {
 
-    private final InMemoryOrderStore orderStore;
+    private final OrderStore orderStore;
     private final PortfolioService portfolioService;
     private final MarketDataService marketDataService;
     private final OrderSimulator simulator = new OrderSimulator();
 
-    public OrderService(InMemoryOrderStore orderStore, PortfolioService portfolioService, MarketDataService marketDataService) {
+    public OrderService(OrderStore orderStore, PortfolioService portfolioService, MarketDataService marketDataService) {
         this.orderStore = orderStore;
         this.portfolioService = portfolioService;
         this.marketDataService = marketDataService;
     }
 
+    @Transactional
     public synchronized OrderQuery createOrder(String symbol, OrderSide side, OrderType orderType, BigDecimal quantity, BigDecimal limitPrice, String timeInForce) {
         validateCreateOrderRequest(orderType, limitPrice, timeInForce);
 
         BigDecimal referencePrice = marketDataService.getReferencePrice(symbol)
                 .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT, "MARKET_DATA_UNAVAILABLE", "market data unavailable for symbol: " + symbol));
 
-        Portfolio currentPortfolio = portfolioService.currentPortfolio();
+        Portfolio currentPortfolio = portfolioService.currentPortfolioForUpdate();
         Order newOrder = orderType == OrderType.MARKET
                 ? Order.market(symbol, side, quantity)
                 : Order.limit(symbol, side, quantity, limitPrice);
@@ -84,6 +86,7 @@ public class OrderService {
         return new OrderListResult(pageItems, nextCursor);
     }
 
+    @Transactional
     public synchronized OrderQuery cancelOrder(String orderId) {
         OrderRecord existing = orderStore.findById(orderId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "order not found: " + orderId));

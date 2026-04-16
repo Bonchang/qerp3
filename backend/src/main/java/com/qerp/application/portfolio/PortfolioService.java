@@ -1,7 +1,6 @@
 package com.qerp.application.portfolio;
 
 import com.qerp.application.market.MarketDataService;
-import com.qerp.application.order.InMemoryOrderStore;
 import com.qerp.domain.portfolio.Portfolio;
 import com.qerp.domain.portfolio.PortfolioMetrics;
 import com.qerp.domain.portfolio.Position;
@@ -17,16 +16,20 @@ import java.util.Map;
 @Service
 public class PortfolioService {
 
-    private final InMemoryOrderStore orderStore;
+    private final PortfolioStore portfolioStore;
     private final MarketDataService marketDataService;
 
-    public PortfolioService(InMemoryOrderStore orderStore, MarketDataService marketDataService) {
-        this.orderStore = orderStore;
+    public PortfolioService(PortfolioStore portfolioStore, MarketDataService marketDataService) {
+        this.portfolioStore = portfolioStore;
         this.marketDataService = marketDataService;
     }
 
     public Portfolio currentPortfolio() {
-        return orderStore.getPortfolio();
+        return portfolioStore.getPortfolio();
+    }
+
+    public Portfolio currentPortfolioForUpdate() {
+        return portfolioStore.getPortfolioForUpdate();
     }
 
     public PortfolioSummaryView getSummary() {
@@ -52,7 +55,7 @@ public class PortfolioService {
     }
 
     public void updatePortfolio(Portfolio portfolio) {
-        orderStore.updatePortfolio(portfolio);
+        portfolioStore.updatePortfolio(portfolio);
     }
 
     private PositionView toView(Position position, BigDecimal currentPrice) {

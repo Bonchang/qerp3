@@ -1,3 +1,13 @@
 spring:
   application:
     name: qerp-backend
+  datasource:
+    url: ${QERP_DB_URL:jdbc:postgresql://localhost:5432/qerp}
+    username: ${QERP_DB_USERNAME:qerp}
+    password: ${QERP_DB_PASSWORD:qerp}
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: true
+  jdbc:
+    template:
+      query-timeout: 5
