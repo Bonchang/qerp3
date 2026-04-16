@@ -1,0 +1,23 @@
+{
+  "name": "qerp3-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "node --import tsx --test src/lib/api.test.ts"
+  },
+  "dependencies": {
+    "next": "15.5.15",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.3",
+    "@types/react": "19.1.2",
+    "@types/react-dom": "19.1.2",
+    "tsx": "4.19.4",
+    "typescript": "5.8.3"
+  }
+}
