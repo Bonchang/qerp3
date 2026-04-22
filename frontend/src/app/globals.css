@@ -86,7 +86,8 @@ button {
   color: #66748d;
 }
 
-.summary-grid {
+.summary-grid,
+.quote-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
@@ -115,18 +116,21 @@ button {
   gap: 14px;
 }
 
-.order-form label {
+.order-form label,
+.instrument-search-form label {
   display: grid;
   gap: 6px;
 }
 
-.order-form span {
+.order-form span,
+.instrument-search-form span {
   font-size: 0.92rem;
   color: #4d5c74;
 }
 
 .order-form input,
-.order-form select {
+.order-form select,
+.instrument-search-form input {
   width: 100%;
   border: 1px solid #cad5e6;
   border-radius: 10px;
@@ -151,6 +155,17 @@ button {
 .order-form button:disabled {
   opacity: 0.7;
   cursor: wait;
+}
+
+.instrument-search-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.instrument-search-form .toolbar-button {
+  min-width: 110px;
 }
 
 .feedback {
@@ -232,14 +247,221 @@ th {
   background: #fff;
 }
 
+.toolbar-button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
 .status-note {
   margin-top: 10px;
   color: #6a7690;
   font-size: 0.92rem;
 }
 
+.search-results {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 0;
+  display: grid;
+  gap: 10px;
+}
+
+.search-result-button {
+  width: 100%;
+  border: 1px solid #d7e0ef;
+  border-radius: 12px;
+  padding: 14px;
+  text-align: left;
+  background: #fff;
+}
+
+.search-result-button.is-selected {
+  border-color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.search-result-topline,
+.search-result-meta,
+.quote-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.search-result-topline {
+  margin-bottom: 6px;
+}
+
+.search-result-topline span,
+.search-result-meta span {
+  color: #617089;
+  font-size: 0.88rem;
+}
+
+.search-result-name {
+  margin-bottom: 8px;
+  color: #243047;
+}
+
+.quote-layout {
+  display: grid;
+  gap: 16px;
+}
+
+.quote-symbol {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #40506b;
+  letter-spacing: 0.08em;
+}
+
+.quote-price {
+  margin-top: 6px;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.quote-change {
+  text-align: right;
+}
+
+.quote-change strong,
+.quote-change span {
+  display: block;
+}
+
+.quote-change strong {
+  font-size: 1.05rem;
+}
+
+.quote-change span {
+  margin-top: 4px;
+  font-size: 0.92rem;
+}
+
+.quote-change-positive {
+  color: #047857;
+}
+
+.quote-change-negative {
+  color: #b91c1c;
+}
+
+.quote-change-neutral {
+  color: #5b6880;
+}
+
+.market-chart-layout {
+  display: grid;
+  gap: 16px;
+}
+
+.market-chart-hero {
+  align-items: flex-start;
+}
+
+.chart-badge-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.chart-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.chart-frame {
+  position: relative;
+  border: 1px solid #d8e0ef;
+  border-radius: 14px;
+  padding: 12px 12px 18px 44px;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+}
+
+.chart-frame svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.chart-grid-line {
+  stroke: #d9e4f4;
+  stroke-dasharray: 4 6;
+  stroke-width: 1;
+}
+
+.chart-area {
+  opacity: 1;
+}
+
+.chart-line {
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart-line-positive {
+  stroke: #047857;
+}
+
+.chart-line-negative {
+  stroke: #b91c1c;
+}
+
+.chart-line-neutral {
+  stroke: #64748b;
+}
+
+.chart-last-point {
+  fill: #1d4ed8;
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.chart-range-label {
+  position: absolute;
+  left: 12px;
+  transform: translateX(-4px);
+  font-size: 0.78rem;
+  color: #617089;
+}
+
+.chart-range-label-top {
+  top: 10px;
+}
+
+.chart-range-label-bottom {
+  bottom: 14px;
+}
+
 @media (max-width: 960px) {
   .layout-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .instrument-search-form {
+    grid-template-columns: 1fr;
+  }
+
+  .quote-hero,
+  .search-result-topline,
+  .search-result-meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .quote-change {
+    text-align: left;
   }
 }

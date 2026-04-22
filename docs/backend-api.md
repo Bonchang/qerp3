@@ -18,6 +18,9 @@
 4. `POST /api/v1/orders/{orderId}/cancel`
 5. `GET /api/v1/portfolio`
 6. `GET /api/v1/portfolio/positions`
+7. `GET /api/v1/instruments/search`
+8. `GET /api/v1/market/quotes/{symbol}`
+9. `GET /api/v1/market/candles/{symbol}`
 
 ### 공통 가정
 - 인증: MVP에서는 미구현. 추후 `X-User-Id` 또는 JWT로 대체 예정.
@@ -337,6 +340,87 @@
 - `marketValue = quantity * currentPrice`
 - `unrealizedPnl = (currentPrice - avgPrice) * quantity`
 - `unrealizedPnlRate = (currentPrice - avgPrice) / avgPrice`
+
+---
+
+## 6.7 GET /api/v1/instruments/search
+### Purpose
+내장된 미국 주식 카탈로그에서 심볼 또는 회사명 기준으로 종목을 검색합니다.
+
+### Query Params
+- `q` (required): 심볼 또는 회사명 검색어, 대소문자 비구분
+- `limit` (optional, default 10, max 20)
+
+### Response JSON (200)
+```json
+{
+  "items": [
+    {
+      "symbol": "AAPL",
+      "name": "Apple Inc.",
+      "exchange": "NASDAQ",
+      "assetType": "EQUITY",
+      "currency": "USD"
+    }
+  ]
+}
+```
+
+### Error Cases
+- 400 `VALIDATION_ERROR` (`q` blank, `limit` 범위 오류)
+
+---
+
+## 6.8 GET /api/v1/market/quotes/{symbol}
+### Purpose
+지원하는 심볼의 결정적(deterministic) 현재가 스냅샷을 반환합니다.
+
+### Response JSON (200)
+```json
+{
+  "symbol": "AAPL",
+  "price": 180.0,
+  "currency": "USD",
+  "change": 1.25,
+  "changePercent": 0.7,
+  "asOf": "2026-04-22T13:30:00Z"
+}
+```
+
+### Error Cases
+- 404 `NOT_FOUND`
+
+---
+
+## 6.9 GET /api/v1/market/candles/{symbol}
+### Purpose
+지원하는 심볼의 결정적(deterministic) 일봉(1D) 캔들 시계열을 반환합니다.
+
+### Query Parameters
+- `interval`: 기본값 `1D`, 현재 MVP에서는 `1D`만 지원
+- `limit`: 기본값 `30`, 최대 `60`
+
+### Response JSON (200)
+```json
+{
+  "symbol": "AAPL",
+  "interval": "1D",
+  "items": [
+    {
+      "timestamp": "2026-04-22T20:00:00Z",
+      "open": 178.75,
+      "high": 183.21,
+      "low": 176.05,
+      "close": 180.0,
+      "volume": 4481007
+    }
+  ]
+}
+```
+
+### Error Cases
+- 400 `VALIDATION_ERROR` (`symbol` 형식 오류, `interval` 미지원, `limit` 범위 오류)
+- 404 `NOT_FOUND` (지원하지 않는 심볼)
 
 ---
 

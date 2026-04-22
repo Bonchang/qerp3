@@ -25,3 +25,6 @@ dist/
 # Local env
 .env
 .env.local
+
+# Hermes local planning artifacts
+.hermes/

@@ -1,12 +1,13 @@
 'use client';
 
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 
 import type { CreateOrderInput, OrderSide, OrderType } from '@/types/api';
 
 interface Props {
   onSubmitOrder: (input: CreateOrderInput) => Promise<void>;
   submitting: boolean;
+  selectedSymbol?: string | null;
 }
 
 const initialState = {
@@ -17,12 +18,23 @@ const initialState = {
   limitPrice: '',
 };
 
-export function OrderForm({ onSubmitOrder, submitting }: Props) {
+export function OrderForm({ onSubmitOrder, submitting, selectedSymbol }: Props) {
   const [formState, setFormState] = useState(initialState);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   const showLimitPrice = useMemo(() => formState.orderType === 'LIMIT', [formState.orderType]);
+
+  useEffect(() => {
+    if (!selectedSymbol) {
+      return;
+    }
+
+    setFormState((current) => ({
+      ...current,
+      symbol: selectedSymbol.trim().toUpperCase(),
+    }));
+  }, [selectedSymbol]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
