@@ -68,6 +68,13 @@ sequenceDiagram
     Frontend-->>User: Render quote panel and chart panel
 ```
 
+### Client-visible request rules
+
+These are useful public constraints for anyone integrating with or evaluating the current API surface:
+- instrument search requires a non-blank `q` parameter and currently supports `limit` values from `1` to `20`
+- quote and candle endpoints return `404 NOT_FOUND` for unsupported symbols
+- candle requests currently support only the `1D` interval and `limit` values from `1` to `60`
+
 ## 4. Order Submission Lifecycle
 
 Order placement is handled synchronously inside the backend request path.

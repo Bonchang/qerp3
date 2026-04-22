@@ -68,6 +68,17 @@ flowchart TB
 | PostgreSQL | Store orders, shared portfolio state, and open positions |
 | Quant worker placeholder | Reserved boundary for future scheduled or event-driven quant workloads |
 
+## Client and API Entry Points
+
+| Entry point | Audience | Current contract |
+| --- | --- | --- |
+| `/` | End users | Single-page dashboard for search, quote/chart inspection, order entry, portfolio summary, positions, and recent orders |
+| `/api/backend/*` | Frontend runtime | Next.js proxy route that forwards browser-originated requests to the backend API |
+| `/api/v1/instruments/*` | Frontend proxy or API consumers | Instrument search over the built-in demo market catalog |
+| `/api/v1/market/*` | Frontend proxy or API consumers | Deterministic quote and candle data for supported symbols |
+| `/api/v1/orders*` | Frontend proxy or API consumers | Paper order submission, listing, lookup, and cancellation |
+| `/api/v1/portfolio*` | Frontend proxy or API consumers | Portfolio headline state and current positions |
+
 ## Architectural Constraints in the Current Product
 
 These are part of the current public product reality, not hidden implementation details:

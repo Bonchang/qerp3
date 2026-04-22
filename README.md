@@ -41,6 +41,29 @@ Today, the product is best understood as a polished foundation for a deployable 
 - Live streaming market data
 - Automated quant strategies or worker-driven signals
 
+## Public Product Surface
+
+### Web surface
+- A single dashboard route at `/` in the Next.js app
+- Dashboard panels for instrument search, quote snapshot, candle chart, paper order entry, portfolio summary, positions, and recent orders
+- A frontend proxy route at `/api/backend/*` so the browser does not call the backend service directly
+
+### Backend API surface
+
+| Route group | Current public behavior |
+| --- | --- |
+| `GET /api/v1/instruments/search?q=...` | Search the built-in supported instrument catalog |
+| `GET /api/v1/market/quotes/{symbol}` | Return a deterministic quote snapshot for a supported symbol |
+| `GET /api/v1/market/candles/{symbol}?interval=1D&limit=30` | Return deterministic daily candles for a supported symbol |
+| `GET /api/v1/portfolio` | Return paper portfolio headline metrics |
+| `GET /api/v1/portfolio/positions` | Return current open positions |
+| `POST /api/v1/orders` / `GET /api/v1/orders` / `GET /api/v1/orders/{orderId}` / `POST /api/v1/orders/{orderId}/cancel` | Create, inspect, list, and cancel paper orders |
+
+### Demo market-data scope
+- A built-in seven-symbol US equity demo catalog
+- Deterministic quote snapshots rather than a live feed
+- Daily candle series with `1D` interval support and a maximum of 60 returned sessions per request
+
 ## Architecture Snapshot
 
 | Layer | Technology | Current responsibility |

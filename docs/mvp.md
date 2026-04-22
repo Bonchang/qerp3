@@ -14,6 +14,16 @@ It currently supports:
 - portfolio summary and open positions
 - a simple dashboard for order entry and portfolio visibility
 
+## Current User-Facing Surface
+
+From an external reader's perspective, the current product experience is:
+- one dashboard page in the web frontend
+- instrument search against a built-in seven-symbol US equity demo catalog
+- a quote panel for the selected symbol
+- a daily candle chart panel using deterministic `1D` candles
+- a paper order form with symbol prefill from the selected instrument
+- portfolio summary, positions, and recent order history panels
+
 ## Current Product Characteristics
 
 | Area | Current state |
