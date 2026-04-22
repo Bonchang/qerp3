@@ -28,6 +28,42 @@ export interface PortfolioPositionsResponse {
   asOf: string;
 }
 
+export interface InstrumentSearchItem {
+  symbol: string;
+  name: string;
+  exchange: string;
+  assetType: string;
+  currency: string;
+}
+
+export interface InstrumentSearchResponse {
+  items: InstrumentSearchItem[];
+}
+
+export interface MarketQuote {
+  symbol: string;
+  price: number;
+  currency: string;
+  change: number;
+  changePercent: number;
+  asOf: string;
+}
+
+export interface MarketCandle {
+  timestamp: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+export interface MarketCandleSeries {
+  symbol: string;
+  interval: string;
+  items: MarketCandle[];
+}
+
 export interface Order {
   orderId: string;
   symbol: string;

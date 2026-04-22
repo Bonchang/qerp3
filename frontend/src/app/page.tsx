@@ -1,13 +1,32 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { InstrumentSearch } from '@/components/instrument-search';
+import { MarketChartPanel } from '@/components/market-chart-panel';
 import { OrderForm } from '@/components/order-form';
 import { OrderList } from '@/components/order-list';
 import { PortfolioSummarySection } from '@/components/portfolio-summary';
 import { PositionsTable } from '@/components/positions-table';
-import { createOrder, fetchOrders, fetchPortfolioSummary, fetchPositions } from '@/lib/api';
-import type { Order, PortfolioSummary, PositionItem } from '@/types/api';
+import { QuotePanel } from '@/components/quote-panel';
+import {
+  createOrder,
+  fetchCandles,
+  fetchOrders,
+  fetchPortfolioSummary,
+  fetchPositions,
+  fetchQuote,
+  searchInstruments,
+} from '@/lib/api';
+import { createSymbolRequestGuard } from '@/lib/request-guard';
+import type {
+  InstrumentSearchItem,
+  MarketCandleSeries,
+  MarketQuote,
+  Order,
+  PortfolioSummary,
+  PositionItem,
+} from '@/types/api';
 
 interface DashboardState {
   summary: PortfolioSummary | null;
@@ -43,6 +62,21 @@ export default function HomePage() {
   const [refreshing, setRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [searchResults, setSearchResults] = useState<InstrumentSearchItem[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
+
+  const [selectedInstrument, setSelectedInstrument] = useState<InstrumentSearchItem | null>(null);
+  const [quote, setQuote] = useState<MarketQuote | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [candles, setCandles] = useState<MarketCandleSeries | null>(null);
+  const [candlesLoading, setCandlesLoading] = useState(false);
+  const [candlesError, setCandlesError] = useState<string | null>(null);
+  const quoteRequestGuardRef = useRef(createSymbolRequestGuard());
+  const candlesRequestGuardRef = useRef(createSymbolRequestGuard());
 
   const formatCurrency = useCallback((value: number) => currencyFormatter.format(value), []);
   const formatNumber = useCallback((value: number) => numberFormatter.format(value), []);
@@ -83,6 +117,86 @@ export default function HomePage() {
     }
   }, []);
 
+  const loadQuote = useCallback(async (symbol: string) => {
+    const normalizedSymbol = symbol.trim().toUpperCase();
+
+    if (!normalizedSymbol) {
+      quoteRequestGuardRef.current.reset();
+      setQuote(null);
+      setQuoteLoading(false);
+      setQuoteError(null);
+      return;
+    }
+
+    const requestToken = quoteRequestGuardRef.current.begin(normalizedSymbol);
+
+    setQuoteLoading(true);
+    setQuote(null);
+    setQuoteError(null);
+
+    try {
+      const nextQuote = await fetchQuote(normalizedSymbol);
+      if (!quoteRequestGuardRef.current.isCurrent(requestToken)) {
+        return;
+      }
+
+      setQuote(nextQuote);
+    } catch (loadError) {
+      if (!quoteRequestGuardRef.current.isCurrent(requestToken)) {
+        return;
+      }
+
+      setQuote(null);
+      setQuoteError(loadError instanceof Error ? loadError.message : 'Unable to load quote.');
+    } finally {
+      if (quoteRequestGuardRef.current.isCurrent(requestToken)) {
+        setQuoteLoading(false);
+      }
+    }
+  }, []);
+
+  const loadCandles = useCallback(async (symbol: string) => {
+    const normalizedSymbol = symbol.trim().toUpperCase();
+
+    if (!normalizedSymbol) {
+      candlesRequestGuardRef.current.reset();
+      setCandles(null);
+      setCandlesLoading(false);
+      setCandlesError(null);
+      return;
+    }
+
+    const requestToken = candlesRequestGuardRef.current.begin(normalizedSymbol);
+
+    setCandlesLoading(true);
+    setCandles(null);
+    setCandlesError(null);
+
+    try {
+      const nextCandles = await fetchCandles(normalizedSymbol);
+      if (!candlesRequestGuardRef.current.isCurrent(requestToken)) {
+        return;
+      }
+
+      setCandles(nextCandles);
+    } catch (loadError) {
+      if (!candlesRequestGuardRef.current.isCurrent(requestToken)) {
+        return;
+      }
+
+      setCandles(null);
+      setCandlesError(loadError instanceof Error ? loadError.message : 'Unable to load candles.');
+    } finally {
+      if (candlesRequestGuardRef.current.isCurrent(requestToken)) {
+        setCandlesLoading(false);
+      }
+    }
+  }, []);
+
+  const loadSelectedInstrumentMarketData = useCallback(async (symbol: string) => {
+    await Promise.all([loadQuote(symbol), loadCandles(symbol)]);
+  }, [loadCandles, loadQuote]);
+
   useEffect(() => {
     void loadDashboard(true);
   }, [loadDashboard]);
@@ -96,6 +210,43 @@ export default function HomePage() {
       setSubmitting(false);
     }
   }, [loadDashboard]);
+
+  const handleInstrumentSearch = useCallback(async (query: string) => {
+    setSearchLoading(true);
+    setSearchError(null);
+    setHasSearched(true);
+
+    try {
+      const response = await searchInstruments(query);
+      setSearchResults(response.items);
+    } catch (loadError) {
+      setSearchResults([]);
+      setSearchError(loadError instanceof Error ? loadError.message : 'Unable to search instruments.');
+    } finally {
+      setSearchLoading(false);
+    }
+  }, []);
+
+  const handleSelectInstrument = useCallback((instrument: InstrumentSearchItem) => {
+    setSelectedInstrument(instrument);
+    void loadSelectedInstrumentMarketData(instrument.symbol);
+  }, [loadSelectedInstrumentMarketData]);
+
+  const handleRefreshQuote = useCallback(() => {
+    if (!selectedInstrument) {
+      return;
+    }
+
+    void loadQuote(selectedInstrument.symbol);
+  }, [loadQuote, selectedInstrument]);
+
+  const handleRefreshChart = useCallback(() => {
+    if (!selectedInstrument) {
+      return;
+    }
+
+    void loadCandles(selectedInstrument.symbol);
+  }, [loadCandles, selectedInstrument]);
 
   const statusText = useMemo(() => {
     if (loading) {
@@ -114,7 +265,7 @@ export default function HomePage() {
     <main className="page-shell">
       <header className="page-header">
         <h1>QERP frontend MVP shell</h1>
-        <p>Minimal Next.js dashboard for portfolio visibility and order entry.</p>
+        <p>Minimal Next.js dashboard for portfolio visibility, market lookup, and order entry.</p>
       </header>
 
       <div className="layout-grid">
@@ -150,7 +301,38 @@ export default function HomePage() {
         </div>
 
         <div className="stack">
-          <OrderForm onSubmitOrder={handleSubmitOrder} submitting={submitting} />
+          <InstrumentSearch
+            results={searchResults}
+            loading={searchLoading}
+            error={searchError}
+            hasSearched={hasSearched}
+            selectedSymbol={selectedInstrument?.symbol ?? null}
+            onSearch={handleInstrumentSearch}
+            onSelectInstrument={handleSelectInstrument}
+          />
+
+          <QuotePanel
+            selectedInstrument={selectedInstrument}
+            quote={quote}
+            loading={quoteLoading}
+            error={quoteError}
+            onRefreshQuote={handleRefreshQuote}
+          />
+
+          <MarketChartPanel
+            selectedInstrument={selectedInstrument}
+            candles={candles}
+            quote={quote}
+            loading={candlesLoading}
+            error={candlesError}
+            onRefresh={handleRefreshChart}
+          />
+
+          <OrderForm
+            onSubmitOrder={handleSubmitOrder}
+            submitting={submitting}
+            selectedSymbol={selectedInstrument?.symbol ?? null}
+          />
 
           <section className="panel">
             <div className="panel-header">

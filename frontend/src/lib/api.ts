@@ -1,6 +1,9 @@
 import {
   ApiErrorResponse,
   CreateOrderInput,
+  InstrumentSearchResponse,
+  MarketCandleSeries,
+  MarketQuote,
   OrderListResponse,
   PortfolioPositionsResponse,
   PortfolioSummary,
@@ -78,6 +81,46 @@ export async function fetchPortfolioSummary(): Promise<PortfolioSummary> {
 
 export async function fetchPositions(): Promise<PortfolioPositionsResponse> {
   return request<PortfolioPositionsResponse>('/portfolio/positions');
+}
+
+export async function searchInstruments(query: string, limit = 10): Promise<InstrumentSearchResponse> {
+  const normalizedQuery = query.trim();
+
+  if (!normalizedQuery) {
+    throw new Error('Search query is required.');
+  }
+
+  const params = new URLSearchParams({
+    q: normalizedQuery,
+    limit: String(limit),
+  });
+
+  return request<InstrumentSearchResponse>(`/instruments/search?${params.toString()}`);
+}
+
+export async function fetchQuote(symbol: string): Promise<MarketQuote> {
+  const normalizedSymbol = symbol.trim().toUpperCase();
+
+  if (!normalizedSymbol) {
+    throw new Error('Symbol is required.');
+  }
+
+  return request<MarketQuote>(`/market/quotes/${encodeURIComponent(normalizedSymbol)}`);
+}
+
+export async function fetchCandles(symbol: string, interval = '1D', limit = 30): Promise<MarketCandleSeries> {
+  const normalizedSymbol = symbol.trim().toUpperCase();
+
+  if (!normalizedSymbol) {
+    throw new Error('Symbol is required.');
+  }
+
+  const params = new URLSearchParams({
+    interval: interval.trim().toUpperCase(),
+    limit: String(limit),
+  });
+
+  return request<MarketCandleSeries>(`/market/candles/${encodeURIComponent(normalizedSymbol)}?${params.toString()}`);
 }
 
 export async function fetchOrders(): Promise<OrderListResponse> {
