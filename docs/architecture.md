@@ -1,46 +1,46 @@
-# QERP Architecture
+# QERP 아키텍처
 
-## Overview
+## 개요
 
-QERP is currently organized as a small, deployable paper-trading system with clear boundaries:
-- a **Next.js web frontend** for the product experience
-- a **Spring Boot backend** as the source of truth for trading and portfolio state
-- **PostgreSQL** for persistence
-- a **quant-worker placeholder** for future strategy automation
+QERP는 현재 작고 분명한 경계를 가진 페이퍼 트레이딩 시스템으로 구성되어 있습니다.
+- 제품 경험을 담당하는 **Next.js 웹 프론트엔드**
+- 주문과 포트폴리오 상태의 기준이 되는 **Spring Boot 백엔드**
+- 영속성을 담당하는 **PostgreSQL**
+- 향후 전략 자동화를 위한 **quant-worker 플레이스홀더**
 
-The architecture favors a single understandable runtime over early platform complexity.
+이 아키텍처는 초기부터 복잡한 플랫폼 구조를 도입하기보다, 이해하기 쉽고 실제로 실행 가능한 단일 런타임을 우선합니다.
 
-## System Context
+## 시스템 컨텍스트
 
 ```mermaid
 flowchart LR
-    Trader[Trader / Viewer]
+    Trader[사용자]
 
     subgraph QERP[QERP]
-        Frontend[Frontend\nNext.js App Router]
-        Backend[Backend\nSpring Boot 3 / Java 21]
+        Frontend[프론트엔드\nNext.js App Router]
+        Backend[백엔드\nSpring Boot 3 / Java 21]
         Database[(PostgreSQL)]
-        MarketData[Deterministic Market Data Service\nIn-memory reference catalog]
-        Worker[Quant Worker\nPlaceholder boundary]
+        MarketData[결정적 시장 데이터 서비스\n인메모리 기준 카탈로그]
+        Worker[Quant Worker\n확장 경계]
     end
 
     Trader --> Frontend
-    Frontend -->|Proxy + REST| Backend
+    Frontend -->|프록시 + REST| Backend
     Backend --> Database
     Backend --> MarketData
-    Worker -. future integration .-> Backend
+    Worker -. 향후 연동 .-> Backend
 ```
 
-## Current Runtime Shape
+## 현재 런타임 구조
 
 ```mermaid
 flowchart TB
-    Browser[Browser]
-    NextProxy[Next.js route\n/api/backend/*]
+    Browser[브라우저]
+    NextProxy[Next.js 경로\n/api/backend/*]
     Api[Spring Boot REST API]
     Db[(PostgreSQL)]
-    Flyway[Flyway migrations]
-    MemoryData[In-memory instruments\nquotes and candles]
+    Flyway[Flyway 마이그레이션]
+    MemoryData[인메모리 종목\n시세 및 캔들]
 
     Browser --> NextProxy
     NextProxy --> Api
@@ -49,49 +49,49 @@ flowchart TB
     Api --> MemoryData
 ```
 
-### Why this shape works well today
-- The **frontend** stays focused on product presentation and user input.
-- The **backend** owns order validation, simulation, and portfolio mutation.
-- The **database** persists the minimal paper-trading state needed for continuity.
-- The **market-data service** is deterministic, making the current slice easy to reason about and demo.
-- The **worker boundary** exists without forcing asynchronous infrastructure before it is needed.
+### 현재 구조의 장점
+- **프론트엔드**는 화면 구성과 사용자 입력 처리에 집중합니다.
+- **백엔드**는 주문 검증, 체결 시뮬레이션, 포트폴리오 갱신을 일관되게 관리합니다.
+- **데이터베이스**는 페이퍼 트레이딩 상태를 지속적으로 보존합니다.
+- **시장 데이터 서비스**는 결정적으로 동작하므로 현재 제품 범위를 이해하고 시연하기 쉽습니다.
+- **워커 경계**를 미리 두었지만, 필요 이상의 비동기 인프라를 아직 강제하지 않습니다.
 
-## Component Responsibilities
+## 구성 요소별 책임
 
-| Component | Responsibility |
+| 구성 요소 | 책임 |
 | --- | --- |
-| Frontend | Search instruments, show quote/chart panels, submit orders, render portfolio and recent orders |
-| Next.js proxy route | Forward browser requests to the backend without requiring direct browser-to-backend coupling |
-| Backend API | Validate requests, simulate paper execution, expose read models, persist state |
-| Portfolio service | Compute summary metrics and positions from persisted portfolio state plus reference prices |
-| Market data service | Serve supported instruments, quote snapshots, and deterministic candle series |
-| PostgreSQL | Store orders, shared portfolio state, and open positions |
-| Quant worker placeholder | Reserved boundary for future scheduled or event-driven quant workloads |
+| 프론트엔드 | 종목 검색, 시세/차트 표시, 주문 제출, 포트폴리오 및 최근 주문 렌더링 |
+| Next.js 프록시 라우트 | 브라우저 요청을 백엔드로 전달해 브라우저와 백엔드의 직접 결합을 줄임 |
+| 백엔드 API | 요청 검증, 페이퍼 주문 시뮬레이션, 조회 모델 제공, 상태 저장 |
+| 포트폴리오 서비스 | 저장된 포트폴리오 상태와 기준 가격을 바탕으로 요약 지표와 포지션 계산 |
+| 시장 데이터 서비스 | 지원 종목, 시세 스냅샷, 결정적 캔들 데이터 제공 |
+| PostgreSQL | 주문, 공유 포트폴리오 상태, 현재 포지션 저장 |
+| Quant worker 플레이스홀더 | 향후 스케줄 기반 또는 이벤트 기반 퀀트 작업을 위한 확장 지점 |
 
-## Client and API Entry Points
+## 클라이언트 및 API 진입점
 
-| Entry point | Audience | Current contract |
+| 진입점 | 대상 | 현재 계약 |
 | --- | --- | --- |
-| `/` | End users | Single-page dashboard for search, quote/chart inspection, order entry, portfolio summary, positions, and recent orders |
-| `/api/backend/*` | Frontend runtime | Next.js proxy route that forwards browser-originated requests to the backend API |
-| `/api/v1/instruments/*` | Frontend proxy or API consumers | Instrument search over the built-in demo market catalog |
-| `/api/v1/market/*` | Frontend proxy or API consumers | Deterministic quote and candle data for supported symbols |
-| `/api/v1/orders*` | Frontend proxy or API consumers | Paper order submission, listing, lookup, and cancellation |
-| `/api/v1/portfolio*` | Frontend proxy or API consumers | Portfolio headline state and current positions |
+| `/` | 최종 사용자 | 종목 검색, 시세/차트 확인, 주문 입력, 포트폴리오 요약, 포지션, 최근 주문을 제공하는 단일 대시보드 |
+| `/api/backend/*` | 프론트엔드 런타임 | 브라우저 요청을 백엔드 API로 전달하는 Next.js 프록시 경로 |
+| `/api/v1/instruments/*` | 프론트엔드 프록시 또는 외부 API 소비자 | 내장 데모 종목 카탈로그 검색 |
+| `/api/v1/market/*` | 프론트엔드 프록시 또는 외부 API 소비자 | 지원 심볼의 결정적 시세 및 캔들 데이터 제공 |
+| `/api/v1/orders*` | 프론트엔드 프록시 또는 외부 API 소비자 | 페이퍼 주문 생성, 목록 조회, 단건 조회, 취소 |
+| `/api/v1/portfolio*` | 프론트엔드 프록시 또는 외부 API 소비자 | 포트폴리오 요약과 현재 포지션 조회 |
 
-## Architectural Constraints in the Current Product
+## 현재 제품의 아키텍처 제약
 
-These are part of the current public product reality, not hidden implementation details:
+다음 항목은 숨겨진 내부 사정이 아니라, 현재 공개 제품의 실제 동작 범위입니다.
 
-- **Single shared paper portfolio:** authentication is not implemented yet, so the runtime behaves like one shared demo account.
-- **Deterministic market data:** quote snapshots and candles come from a built-in catalog rather than a live market feed.
-- **Synchronous execution flow:** order submission runs validation, execution simulation, persistence, and portfolio mutation in the backend request path.
-- **No broker connectivity:** orders never leave the platform and are always simulated.
-- **No worker-driven automation:** the quant worker is a documented extension point only.
+- **단일 공유 페이퍼 포트폴리오**: 인증이 아직 없으므로 런타임은 하나의 공유 데모 계정처럼 동작합니다.
+- **결정적 시장 데이터**: 시세와 캔들은 실시간 시장 피드가 아니라 내장 카탈로그에서 제공합니다.
+- **동기식 주문 처리 흐름**: 주문 제출 시 검증, 체결 시뮬레이션, 저장, 포트폴리오 갱신이 한 요청 경로에서 수행됩니다.
+- **브로커 비연결 구조**: 주문은 외부로 전달되지 않으며 모두 플랫폼 내부에서 시뮬레이션됩니다.
+- **워커 자동화 미구현**: quant-worker는 문서화된 확장 지점일 뿐, 현재 런타임 로직에는 참여하지 않습니다.
 
-## Program Structure
+## 프로그램 구조
 
-### Repository layout
+### 저장소 레이아웃
 
 ```text
 qerp3/
@@ -102,45 +102,45 @@ qerp3/
 └─ quant-worker/
 ```
 
-### Backend structure
+### 백엔드 구조
 
 ```text
 backend/src/main/java/com/qerp/
-├─ api/           HTTP controllers and transport models
-├─ application/   Services, persistence adapters, market-data access
-├─ domain/        Paper-trading and portfolio rules
+├─ api/           HTTP 컨트롤러와 전송 모델
+├─ application/   서비스, 영속성 어댑터, 시장 데이터 접근
+├─ domain/        페이퍼 트레이딩과 포트폴리오 규칙
 └─ QerpApplication.java
 ```
 
-### Frontend structure
+### 프론트엔드 구조
 
 ```text
 frontend/src/
-├─ app/           App Router pages and proxy route
-├─ components/    Dashboard UI sections
-├─ lib/           API client helpers and request guards
-└─ types/         Frontend API types
+├─ app/           App Router 페이지와 프록시 라우트
+├─ components/    대시보드 UI 영역
+├─ lib/           API 클라이언트와 요청 도우미
+└─ types/         프론트엔드 API 타입
 ```
 
-## Design Notes for External Readers
+## 외부 독자를 위한 설계 메모
 
-### Backend organization
-The backend follows a pragmatic layered structure:
-- **`api`** translates HTTP requests and responses
-- **`application`** coordinates use cases and persistence
-- **`domain`** holds the actual paper-trading rules
+### 백엔드 구성 방식
+백엔드는 실용적인 계층 구조를 따릅니다.
+- **`api`**는 HTTP 요청과 응답을 다룹니다.
+- **`application`**은 유스케이스와 영속성 흐름을 조합합니다.
+- **`domain`**은 실제 페이퍼 트레이딩 규칙을 담습니다.
 
-This makes the order lifecycle and portfolio logic visible without introducing unnecessary framework abstraction.
+이 구조 덕분에 주문 생명주기와 포트폴리오 계산 규칙이 과도한 프레임워크 추상화 없이 비교적 분명하게 드러납니다.
 
-### Frontend organization
-The frontend keeps the dashboard straightforward:
-- **`app`** defines runtime entrypoints
-- **`components`** map closely to visible product panels
-- **`lib`** centralizes backend access and client helpers
-- **`types`** keep request/response usage explicit in TypeScript
+### 프론트엔드 구성 방식
+프론트엔드는 대시보드 경험을 단순하게 유지합니다.
+- **`app`**은 런타임 진입점을 정의합니다.
+- **`components`**는 화면에 보이는 패널 구조와 가깝게 매핑됩니다.
+- **`lib`**는 백엔드 접근과 클라이언트 유틸리티를 모읍니다.
+- **`types`**는 TypeScript에서 요청/응답 계약을 분명하게 유지합니다.
 
-## Related Docs
+## 관련 문서
 
-- [Runtime lifecycle](runtime-lifecycle.md)
-- [Core ERD](erd.md)
-- [Current product scope](mvp.md)
+- [런타임 흐름](runtime-lifecycle.md)
+- [핵심 ERD](erd.md)
+- [현재 제품 범위](mvp.md)

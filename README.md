@@ -1,119 +1,120 @@
 # QERP
 
-QERP is a paper-trading web application foundation built around a simple, deployable vertical slice: market lookup, deterministic market snapshots, paper order simulation, and portfolio tracking in a single web dashboard.
+QERP는 단일 대시보드에서 종목 탐색, 시세 확인, 차트 조회, 페이퍼 주문, 포트폴리오 추적까지 이어지는 흐름을 제공하는 *페이퍼 트레이딩 웹 애플리케이션 기반 프로젝트*입니다.
 
-The current implementation is intentionally narrow and honest. It combines a **Next.js App Router frontend**, a **Spring Boot 3 / Java 21 backend**, **PostgreSQL + Flyway** persistence, and a **placeholder quant-worker boundary** for future automation.
+현재 구현 범위는 의도적으로 좁고 분명합니다. **Next.js App Router 프론트엔드**, **Spring Boot 3 / Java 21 백엔드**, **PostgreSQL + Flyway 기반 영속성**, 그리고 향후 확장을 위한 **quant-worker 경계**를 조합해 실제로 실행 가능한 세로 슬라이스를 구성합니다.
 
-## Product Overview
+## 제품 개요
 
-QERP is aimed at the paper-trading experience first:
-- discover a supported instrument
-- inspect a quote snapshot
-- view a deterministic candle chart
-- place a paper order
-- see the portfolio and positions update through the backend source of truth
+QERP는 우선 페이퍼 트레이딩 경험 자체를 깔끔하게 제공하는 데 초점을 둡니다.
+- 지원 종목 검색
+- 현재가 스냅샷 확인
+- 결정적 일봉 차트 조회
+- 페이퍼 주문 제출
+- 백엔드를 기준으로 갱신되는 포트폴리오와 포지션 확인
 
-Today, the product is best understood as a polished foundation for a deployable paper-trading web app rather than a full brokerage platform.
+지금의 QERP는 완전한 증권 플랫폼이라기보다, 배포 가능한 페이퍼 트레이딩 웹 앱의 기반을 정리해 둔 제품형 프로젝트에 가깝습니다.
 
-## Current Capabilities
+## 현재 제공 기능
 
-### Implemented now
-- Paper order API for **create / get / list / cancel**
-- Portfolio **summary** and **positions** views
-- Instrument search across the built-in market catalog
-- Quote snapshot endpoint for supported symbols
-- Deterministic daily candle series for chart rendering
-- Next.js dashboard with:
-  - instrument search
-  - quote panel
-  - candle chart panel
-  - order entry form
-  - portfolio summary
-  - positions table
-  - recent orders list
-- PostgreSQL-backed persistence for orders and portfolio state
-- Flyway-managed schema creation
+### 이미 구현된 기능
+- 페이퍼 주문 API: **생성 / 단건 조회 / 목록 조회 / 취소**
+- 포트폴리오 **요약** 및 **포지션** 조회
+- 내장 종목 카탈로그 기반 종목 검색
+- 지원 심볼 대상 시세 스냅샷 조회
+- 차트 렌더링용 결정적 일봉 캔들 데이터 조회
+- Next.js 대시보드 UI
+  - 종목 검색
+  - 시세 패널
+  - 캔들 차트 패널
+  - 주문 입력 폼
+  - 포트폴리오 요약
+  - 포지션 테이블
+  - 최근 주문 목록
+- PostgreSQL 기반 주문/포트폴리오 상태 저장
+- Flyway 기반 스키마 생성 및 관리
 
-### Not yet implemented
-- Authentication and user accounts
-- Real broker connectivity or live order routing
-- Multi-user portfolio isolation
-- Live streaming market data
-- Automated quant strategies or worker-driven signals
+### 아직 구현되지 않은 기능
+- 인증 및 사용자 계정
+- 실제 브로커 연동 또는 실주문 라우팅
+- 사용자별 포트폴리오 분리
+- 실시간 스트리밍 시세
+- 자동화된 퀀트 전략 실행 또는 워커 기반 시그널 처리
 
-## Public Product Surface
+## 공개 제품 표면
 
-### Web surface
-- A single dashboard route at `/` in the Next.js app
-- Dashboard panels for instrument search, quote snapshot, candle chart, paper order entry, portfolio summary, positions, and recent orders
-- A frontend proxy route at `/api/backend/*` so the browser does not call the backend service directly
+### 웹 화면
+- Next.js 앱의 단일 대시보드 경로 `/`
+- 종목 검색, 시세, 차트, 주문 입력, 포트폴리오 요약, 포지션, 최근 주문 패널
+- 브라우저가 백엔드를 직접 호출하지 않도록 하는 프론트엔드 프록시 경로 `/api/backend/*`
 
-### Backend API surface
+### 백엔드 API
 
-| Route group | Current public behavior |
+| 경로 그룹 | 현재 공개 동작 |
 | --- | --- |
-| `GET /api/v1/instruments/search?q=...` | Search the built-in supported instrument catalog |
-| `GET /api/v1/market/quotes/{symbol}` | Return a deterministic quote snapshot for a supported symbol |
-| `GET /api/v1/market/candles/{symbol}?interval=1D&limit=30` | Return deterministic daily candles for a supported symbol |
-| `GET /api/v1/portfolio` | Return paper portfolio headline metrics |
-| `GET /api/v1/portfolio/positions` | Return current open positions |
-| `POST /api/v1/orders` / `GET /api/v1/orders` / `GET /api/v1/orders/{orderId}` / `POST /api/v1/orders/{orderId}/cancel` | Create, inspect, list, and cancel paper orders |
+| `GET /api/v1/instruments/search?q=...` | 내장 지원 종목 카탈로그를 검색합니다. |
+| `GET /api/v1/market/quotes/{symbol}` | 지원 심볼의 결정적 시세 스냅샷을 반환합니다. |
+| `GET /api/v1/market/candles/{symbol}?interval=1D&limit=30` | 지원 심볼의 결정적 일봉 캔들 데이터를 반환합니다. |
+| `GET /api/v1/portfolio` | 페이퍼 포트폴리오의 핵심 요약 지표를 반환합니다. |
+| `GET /api/v1/portfolio/positions` | 현재 보유 중인 포지션 목록을 반환합니다. |
+| `POST /api/v1/orders` / `GET /api/v1/orders` / `GET /api/v1/orders/{orderId}` / `POST /api/v1/orders/{orderId}/cancel` | 페이퍼 주문 생성, 조회, 목록 확인, 취소를 제공합니다. |
 
-### Demo market-data scope
-- A built-in seven-symbol US equity demo catalog
-- Deterministic quote snapshots rather than a live feed
-- Daily candle series with `1D` interval support and a maximum of 60 returned sessions per request
+### 데모 시장 데이터 범위
+- 미국 주식 7개 심볼로 구성된 내장 데모 카탈로그
+- 실시간 피드 대신 결정적 시세 스냅샷 제공
+- `1D` 간격만 지원하는 일봉 캔들 데이터
+- 캔들 조회는 요청당 최대 60개 세션 반환
 
-## Architecture Snapshot
+## 아키텍처 요약
 
-| Layer | Technology | Current responsibility |
+| 계층 | 기술 | 현재 역할 |
 | --- | --- | --- |
-| Frontend | Next.js App Router, TypeScript, React | Web dashboard, backend proxy route, client-side data loading and rendering |
-| Backend | Spring Boot 3, Java 21, Gradle | REST API, paper order simulation, portfolio calculation, market-data access |
-| Database | PostgreSQL, Flyway | Persistent order records and portfolio state |
-| Quant worker | Python placeholder | Reserved integration boundary; no active runtime logic yet |
+| 프론트엔드 | Next.js App Router, TypeScript, React | 대시보드 UI, 백엔드 프록시, 클라이언트 데이터 로딩/렌더링 |
+| 백엔드 | Spring Boot 3, Java 21, Gradle | REST API, 주문 시뮬레이션, 포트폴리오 계산, 시장 데이터 접근 |
+| 데이터베이스 | PostgreSQL, Flyway | 주문 기록과 포트폴리오 상태 저장 |
+| Quant worker | Python 플레이스홀더 | 향후 자동화 연동을 위한 경계, 현재 활성 런타임 로직 없음 |
 
-## System Context
+## 시스템 컨텍스트
 
 ```mermaid
 flowchart LR
-    Trader[Trader / Viewer]
-    Frontend[QERP Frontend\nNext.js App Router]
-    Backend[QERP Backend\nSpring Boot API]
+    Trader[사용자]
+    Frontend[QERP 프론트엔드\nNext.js App Router]
+    Backend[QERP 백엔드\nSpring Boot API]
     DB[(PostgreSQL)]
-    MarketData[Deterministic Market Data\nIn-memory catalog + quotes + candles]
-    Worker[Quant Worker\nPlaceholder boundary]
+    MarketData[결정적 시장 데이터\n내장 카탈로그 + 시세 + 캔들]
+    Worker[Quant Worker\n확장 경계]
 
     Trader --> Frontend
-    Frontend -->|Proxy + HTTP API| Backend
+    Frontend -->|프록시 + HTTP API| Backend
     Backend --> DB
     Backend --> MarketData
-    Worker -. reserved integration .-> Backend
+    Worker -. 향후 연동 지점 .-> Backend
 ```
 
-## Runtime Lifecycle Summary
+## 런타임 흐름 요약
 
-1. **Dashboard load**  
-   The frontend loads portfolio summary, positions, and recent orders through its backend proxy route.
-2. **Instrument lookup**  
-   A user searches the built-in instrument catalog, then the frontend requests a quote snapshot and candle series for the selected symbol.
-3. **Order submission**  
-   The backend validates the request, pulls the current deterministic reference price, simulates the paper execution, persists the order, and updates portfolio state in PostgreSQL.
-4. **Portfolio refresh**  
-   The frontend reloads portfolio and order data so the new state is immediately visible.
-5. **Order cancellation**  
-   Pending orders can be cancelled through the API; the backend validates status and updates the persisted order record.
+1. **대시보드 진입**  
+   프론트엔드는 자체 프록시 경로를 통해 포트폴리오 요약, 포지션, 최근 주문을 불러옵니다.
+2. **종목 탐색**  
+   사용자가 내장 종목 카탈로그를 검색하고, 선택한 심볼에 대해 시세 스냅샷과 캔들 데이터를 조회합니다.
+3. **주문 제출**  
+   백엔드는 요청을 검증하고 기준 가격을 조회한 뒤, 페이퍼 주문을 시뮬레이션하고 결과를 PostgreSQL에 저장합니다.
+4. **포트폴리오 갱신**  
+   프론트엔드는 최신 포트폴리오와 주문 데이터를 다시 불러와 변경 사항을 즉시 보여줍니다.
+5. **주문 취소**  
+   대기 중인 주문은 API를 통해 취소할 수 있으며, 백엔드는 상태를 검증한 뒤 저장된 주문 레코드를 갱신합니다.
 
-**Current execution model:** market orders fill immediately, and limit orders are evaluated once at submission time against the current reference price. If a limit order does not cross at submission, it remains `PENDING` until cancelled; a background re-pricing engine is not implemented yet.
+**현재 체결 모델:** 시장가 주문은 즉시 전량 체결됩니다. 지정가 주문은 제출 시점 기준 가격으로 한 번만 평가되며, 가격 조건을 만족하지 않으면 `PENDING` 상태로 남아 취소 전까지 유지됩니다. 제출 이후 가격 변화에 따라 재평가하는 백그라운드 엔진은 아직 구현되어 있지 않습니다.
 
-More detail: [docs/runtime-lifecycle.md](docs/runtime-lifecycle.md)
+자세한 내용: [docs/runtime-lifecycle.md](docs/runtime-lifecycle.md)
 
-## Core Domain / ERD Overview
+## 핵심 도메인 / ERD 개요
 
-The current persisted domain is intentionally small:
-- `orders` stores the paper-trading order lifecycle
-- `portfolio_state` stores the shared paper account headline state
-- `portfolio_positions` stores symbol-level holdings
+현재 영속화되는 핵심 도메인은 작게 유지되어 있습니다.
+- `orders`: 페이퍼 주문의 전체 생명주기 저장
+- `portfolio_state`: 공유 포트폴리오의 핵심 상태 저장
+- `portfolio_positions`: 심볼별 보유 수량 저장
 
 ```mermaid
 erDiagram
@@ -149,62 +150,62 @@ erDiagram
     }
 ```
 
-Notes:
-- The runtime currently operates a **single shared paper portfolio**.
-- `portfolio_state` and `portfolio_positions` are updated together by backend transaction logic, but the current schema does **not** persist a foreign-key relationship between them.
-- Orders affect portfolio state through backend service logic rather than direct SQL foreign keys.
-- Market data used for quotes and charts is currently served from a **small built-in demo catalog** in application memory, not stored in database tables.
+참고 사항:
+- 현재 런타임은 **단일 공유 페이퍼 포트폴리오**를 사용합니다.
+- `portfolio_state`와 `portfolio_positions`는 백엔드 트랜잭션 안에서 함께 갱신되지만, 스키마 차원 외래 키는 아직 없습니다.
+- 주문이 포트폴리오 상태에 미치는 영향은 SQL 관계가 아니라 백엔드 서비스 로직으로 처리합니다.
+- 시세와 차트에 쓰이는 시장 데이터는 현재 **애플리케이션 메모리의 소규모 데모 카탈로그**에서 제공되며 DB 테이블에 저장하지 않습니다.
 
-More detail: [docs/erd.md](docs/erd.md)
+자세한 내용: [docs/erd.md](docs/erd.md)
 
-## Repository Structure
+## 저장소 구조
 
 ```text
 qerp3/
-├─ backend/        Spring Boot API, domain logic, JDBC persistence, Flyway migrations
-├─ frontend/       Next.js App Router dashboard and backend proxy route
-├─ quant-worker/   Placeholder Python worker boundary for future automation
-├─ infra/          Infrastructure placeholder and deployment-facing assets
-├─ docs/           Public architecture, lifecycle, and domain documentation
+├─ backend/        Spring Boot API, 도메인 로직, JDBC 영속성, Flyway 마이그레이션
+├─ frontend/       Next.js App Router 대시보드와 백엔드 프록시
+├─ quant-worker/   향후 자동화를 위한 Python 워커 경계
+├─ infra/          인프라 플레이스홀더 및 배포 관련 자산
+├─ docs/           공개용 아키텍처, 런타임, 도메인 문서
 └─ README.md
 ```
 
-### Program structure at a glance
+### 코드 구조 한눈에 보기
 
-**Backend**
-- `api/` - REST controllers and response models
-- `application/` - orchestration, services, persistence adapters, market-data service
-- `domain/` - paper trading and portfolio domain rules
-- `src/main/resources/db/migration/` - Flyway schema migrations
+**백엔드**
+- `api/` - REST 컨트롤러와 응답 모델
+- `application/` - 유스케이스 조합, 서비스, 영속성 어댑터, 시장 데이터 서비스
+- `domain/` - 페이퍼 트레이딩과 포트폴리오 규칙
+- `src/main/resources/db/migration/` - Flyway 스키마 마이그레이션
 
-**Frontend**
-- `src/app/` - App Router entrypoints and proxy route
-- `src/components/` - dashboard UI panels
-- `src/lib/` - API client and request helpers
-- `src/types/` - shared frontend API types
+**프론트엔드**
+- `src/app/` - App Router 진입점과 프록시 라우트
+- `src/components/` - 대시보드 UI 패널
+- `src/lib/` - API 클라이언트와 요청 도우미
+- `src/types/` - 프론트엔드 공용 API 타입
 
-More detail: [docs/architecture.md](docs/architecture.md)
+자세한 내용: [docs/architecture.md](docs/architecture.md)
 
-## Local Run / Test Basics
+## 로컬 실행 및 테스트
 
-### Prerequisites
+### 준비 사항
 - Java 21
 - PostgreSQL
 - Node.js 20+
 
-### Backend
+### 백엔드 실행
 
 ```bash
 cd backend
 export QERP_DB_URL=jdbc:postgresql://localhost:5432/qerp
 export QERP_DB_USERNAME=qerp
-export QERP_DB_PASSWORD=qerp
+export QERP_DB_PASSWORD=***
 ./gradlew bootRun
 ```
 
-Flyway creates the current schema on startup.
+애플리케이션 시작 시 Flyway가 현재 스키마를 생성합니다.
 
-### Frontend
+### 프론트엔드 실행
 
 ```bash
 cd frontend
@@ -213,9 +214,9 @@ npm install
 npm run dev
 ```
 
-By default, the frontend targets `http://localhost:8080` and forwards browser requests through `/api/backend/...`.
+기본 설정에서 프론트엔드는 `http://localhost:8080` 백엔드를 대상으로 하며, 브라우저 요청은 `/api/backend/...`를 통해 전달합니다.
 
-### Tests
+### 테스트
 
 ```bash
 cd backend
@@ -227,20 +228,20 @@ cd frontend
 npm test
 ```
 
-## Public-Facing Docs
+## 공개 문서
 
-- [Architecture](docs/architecture.md)
-- [Runtime lifecycle](docs/runtime-lifecycle.md)
-- [Core ERD](docs/erd.md)
-- [Current product scope](docs/mvp.md)
+- [아키텍처](docs/architecture.md)
+- [런타임 흐름](docs/runtime-lifecycle.md)
+- [핵심 ERD](docs/erd.md)
+- [현재 제품 범위](docs/mvp.md)
 
-## Not Implemented Today
+## 현재 미구현 범위
 
-QERP is currently focused on a clean paper-trading foundation. The next broad product layers that are **not implemented yet** are:
-- authentication and portfolio ownership
-- richer market-data connectivity
-- real brokerage integration
-- quant-worker automation beyond the placeholder boundary
-- production-grade deployment and observability hardening
+QERP는 현재 페이퍼 트레이딩 기반을 명확하게 제공하는 데 집중하고 있습니다. 아래 영역은 아직 구현되지 않았습니다.
+- 인증 및 포트폴리오 소유권 관리
+- 더 풍부한 시장 데이터 연동
+- 실제 브로커 통합
+- 플레이스홀더를 넘어서는 quant-worker 자동화
+- 운영 배포 수준의 관측성 및 하드닝
 
-Those areas are intentionally left out of the current product slice.
+이 영역들은 현재 공개 제품 범위에 의도적으로 포함하지 않았습니다.

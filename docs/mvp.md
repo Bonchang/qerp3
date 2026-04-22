@@ -1,59 +1,59 @@
-# QERP Current Product Scope
+# QERP 현재 제품 범위
 
-This document captures the current public-facing product scope.
+이 문서는 현재 공개 기준에서 QERP가 어디까지 구현되어 있는지 정리합니다.
 
-## What QERP is today
+## 지금의 QERP
 
-QERP is a paper-trading web application foundation with a working end-to-end slice across frontend, backend, and database.
+QERP는 프론트엔드, 백엔드, 데이터베이스를 하나의 흐름으로 연결한 페이퍼 트레이딩 웹 애플리케이션 기반 프로젝트입니다.
 
-It currently supports:
-- instrument search
-- quote snapshots
-- deterministic daily candle charts
-- paper order create / get / list / cancel via the backend API
-- portfolio summary and open positions
-- a simple dashboard for order entry and portfolio visibility
+현재 제공 범위는 다음과 같습니다.
+- 종목 검색
+- 시세 스냅샷 조회
+- 결정적 일봉 캔들 차트 조회
+- 백엔드 API 기반 페이퍼 주문 생성 / 조회 / 목록 / 취소
+- 포트폴리오 요약 및 현재 포지션 확인
+- 주문 입력과 포트폴리오 가시성을 제공하는 단일 대시보드
 
-## Current User-Facing Surface
+## 사용자 관점의 현재 제품 표면
 
-From an external reader's perspective, the current product experience is:
-- one dashboard page in the web frontend
-- instrument search against a built-in seven-symbol US equity demo catalog
-- a quote panel for the selected symbol
-- a daily candle chart panel using deterministic `1D` candles
-- a paper order form with symbol prefill from the selected instrument
-- portfolio summary, positions, and recent order history panels
+외부 사용자나 저장소 방문자 기준에서 현재 제품 경험은 다음과 같습니다.
+- 웹 프론트엔드의 단일 대시보드 페이지
+- 미국 주식 7개 심볼로 구성된 내장 데모 카탈로그 검색
+- 선택한 종목의 시세 패널
+- 결정적 `1D` 캔들 데이터를 사용하는 일봉 차트 패널
+- 선택 종목 심볼을 미리 채워 넣는 페이퍼 주문 폼
+- 포트폴리오 요약, 포지션, 최근 주문 이력 패널
 
-## Current Product Characteristics
+## 현재 제품 특성
 
-| Area | Current state |
+| 영역 | 현재 상태 |
 | --- | --- |
-| Product mode | Paper trading only |
-| Market data | Small built-in demo market catalog |
-| Persistence | PostgreSQL with Flyway migrations |
-| Backend | Spring Boot 3 / Java 21 |
-| Frontend | Next.js App Router / TypeScript |
-| Quant worker | Placeholder only |
-| Account model | Single shared portfolio state |
+| 제품 모드 | 페이퍼 트레이딩 전용 |
+| 시장 데이터 | 소규모 내장 데모 시장 카탈로그 |
+| 영속성 | PostgreSQL + Flyway |
+| 백엔드 | Spring Boot 3 / Java 21 |
+| 프론트엔드 | Next.js App Router / TypeScript |
+| Quant worker | 플레이스홀더만 존재 |
+| 계정 모델 | 단일 공유 포트폴리오 상태 |
 
-## What is not implemented yet
+## 아직 구현되지 않은 범위
 
-The following are intentionally outside the implemented product state today:
-- authentication and user ownership
-- real broker integration
-- live market data streaming
-- automated quant execution or signal generation
-- production operations hardening beyond the current foundation
+다음 항목은 현재 제품 범위에 포함되지 않습니다.
+- 인증 및 사용자별 소유권 관리
+- 실제 브로커 연동
+- 실시간 시장 데이터 스트리밍
+- 자동 퀀트 실행 또는 시그널 생성
+- 현재 기반을 넘어선 운영 배포 하드닝
 
-## Product Positioning
+## 제품 포지셔닝
 
-The current QERP codebase is best viewed as:
-- a clean portfolio project for a deployable paper-trading app
-- a strong vertical slice for future product expansion
-- a transparent implementation that avoids overclaiming live-trading capability
+현재 QERP 코드는 다음과 같이 이해하는 것이 가장 정확합니다.
+- 배포 가능한 페이퍼 트레이딩 앱을 위한 정돈된 기반 프로젝트
+- 이후 기능 확장을 위한 견고한 세로 슬라이스
+- 실거래 능력을 과장하지 않고 현재 범위를 투명하게 드러내는 구현
 
-## Related Docs
+## 관련 문서
 
-- [Architecture](architecture.md)
-- [Runtime lifecycle](runtime-lifecycle.md)
-- [Core ERD](erd.md)
+- [아키텍처](architecture.md)
+- [런타임 흐름](runtime-lifecycle.md)
+- [핵심 ERD](erd.md)
