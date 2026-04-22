@@ -1,52 +1,135 @@
-# QERP v2 Architecture
+# QERP Architecture
 
-## 1) System Context
-QERP v2는 3개 실행 컴포넌트(Frontend, Backend, Quant Worker)와 외부 시장 데이터 소스를 중심으로 동작합니다.
+## Overview
 
-- 사용자: 웹 UI를 통해 시세 조회, 주문, 포트폴리오 확인, 모드 전환 수행
-- 외부 시장 데이터 소스: 가격/호가/캔들 데이터 제공
-- QERP Backend: **Java + Spring Boot** API 및 거래/포트폴리오 상태의 단일 진실 원천(Source of Truth)
-- QERP Quant Worker: **Python 워커**로 정기/이벤트 기반 계산 인사이트 생성
+QERP is currently organized as a small, deployable paper-trading system with clear boundaries:
+- a **Next.js web frontend** for the product experience
+- a **Spring Boot backend** as the source of truth for trading and portfolio state
+- **PostgreSQL** for persistence
+- a **quant-worker placeholder** for future strategy automation
 
-## 2) 컴포넌트 책임
+The architecture favors a single understandable runtime over early platform complexity.
 
-### Frontend
-- 시장 데이터, 주문 상태, 포트폴리오 요약 표시
-- 일반 모드/퀀트 모드 UI 전환
-- Backend API 호출 및 결과 렌더링
-- 도메인 규칙은 보유하지 않고 표현/입력에 집중
+## System Context
 
-### Backend
-- 주문 생성/검증/체결 기록
-- 포트폴리오 및 손익 계산 결과 제공
-- 시장 데이터 캐시 또는 조회 추상화
-- Quant Worker와의 작업 인터페이스(큐 또는 스케줄 트리거)
-- PostgreSQL + Flyway 기반 데이터 일관성/마이그레이션 관리(구현은 후속 단계)
+```mermaid
+flowchart LR
+    Trader[Trader / Viewer]
 
-### Quant Worker
-- 지표 계산(예: 이동평균, 모멘텀 등 단순 지표부터)
-- 전략 신호를 초보자 친화 설명으로 변환
-- 결과를 Backend가 조회 가능한 저장소에 반영
+    subgraph QERP[QERP]
+        Frontend[Frontend\nNext.js App Router]
+        Backend[Backend\nSpring Boot 3 / Java 21]
+        Database[(PostgreSQL)]
+        MarketData[Deterministic Market Data Service\nIn-memory reference catalog]
+        Worker[Quant Worker\nPlaceholder boundary]
+    end
 
-## 3) 데이터 흐름
-1. **Market Data Ingestion**
-   - Backend가 외부 시세 소스에서 데이터 수집/조회
-2. **Order Request**
-   - 사용자가 Frontend에서 매수/매도 요청
-   - Backend가 요청 검증 후 페이퍼 주문 생성
-3. **Execution Simulation**
-   - Backend가 체결 규칙(단순 가격 기준)을 적용해 체결 처리
-4. **Portfolio Update**
-   - 체결 이벤트 기반으로 포지션/평단/손익 갱신
-5. **Quant Insight**
-   - Quant Worker가 최신 시세/포트폴리오를 참고해 인사이트 계산
-   - Backend API를 통해 Frontend에 전달
+    Trader --> Frontend
+    Frontend -->|Proxy + REST| Backend
+    Backend --> Database
+    Backend --> MarketData
+    Worker -. future integration .-> Backend
+```
 
-## 4) Scope Boundaries (과도한 설계 방지)
-- MVP에서 마이크로서비스 분할을 강제하지 않음
-- 이벤트 버스/스트리밍 플랫폼은 필요 증거 전까지 도입하지 않음
-- 고급 리스크 엔진/백테스트 플랫폼은 MVP 제외
-- 실거래 브로커 API 연동은 MVP 제외
-- 멀티 테넌시, 권한 체계, SSO는 MVP 제외
+## Current Runtime Shape
 
-핵심 원칙: **단일 배포 가능한 단순 구조 + 명확한 책임 분리**.
+```mermaid
+flowchart TB
+    Browser[Browser]
+    NextProxy[Next.js route\n/api/backend/*]
+    Api[Spring Boot REST API]
+    Db[(PostgreSQL)]
+    Flyway[Flyway migrations]
+    MemoryData[In-memory instruments\nquotes and candles]
+
+    Browser --> NextProxy
+    NextProxy --> Api
+    Flyway --> Db
+    Api --> Db
+    Api --> MemoryData
+```
+
+### Why this shape works well today
+- The **frontend** stays focused on product presentation and user input.
+- The **backend** owns order validation, simulation, and portfolio mutation.
+- The **database** persists the minimal paper-trading state needed for continuity.
+- The **market-data service** is deterministic, making the current slice easy to reason about and demo.
+- The **worker boundary** exists without forcing asynchronous infrastructure before it is needed.
+
+## Component Responsibilities
+
+| Component | Responsibility |
+| --- | --- |
+| Frontend | Search instruments, show quote/chart panels, submit orders, render portfolio and recent orders |
+| Next.js proxy route | Forward browser requests to the backend without requiring direct browser-to-backend coupling |
+| Backend API | Validate requests, simulate paper execution, expose read models, persist state |
+| Portfolio service | Compute summary metrics and positions from persisted portfolio state plus reference prices |
+| Market data service | Serve supported instruments, quote snapshots, and deterministic candle series |
+| PostgreSQL | Store orders, shared portfolio state, and open positions |
+| Quant worker placeholder | Reserved boundary for future scheduled or event-driven quant workloads |
+
+## Architectural Constraints in the Current Product
+
+These are part of the current public product reality, not hidden implementation details:
+
+- **Single shared paper portfolio:** authentication is not implemented yet, so the runtime behaves like one shared demo account.
+- **Deterministic market data:** quote snapshots and candles come from a built-in catalog rather than a live market feed.
+- **Synchronous execution flow:** order submission runs validation, execution simulation, persistence, and portfolio mutation in the backend request path.
+- **No broker connectivity:** orders never leave the platform and are always simulated.
+- **No worker-driven automation:** the quant worker is a documented extension point only.
+
+## Program Structure
+
+### Repository layout
+
+```text
+qerp3/
+├─ backend/
+├─ frontend/
+├─ docs/
+├─ infra/
+└─ quant-worker/
+```
+
+### Backend structure
+
+```text
+backend/src/main/java/com/qerp/
+├─ api/           HTTP controllers and transport models
+├─ application/   Services, persistence adapters, market-data access
+├─ domain/        Paper-trading and portfolio rules
+└─ QerpApplication.java
+```
+
+### Frontend structure
+
+```text
+frontend/src/
+├─ app/           App Router pages and proxy route
+├─ components/    Dashboard UI sections
+├─ lib/           API client helpers and request guards
+└─ types/         Frontend API types
+```
+
+## Design Notes for External Readers
+
+### Backend organization
+The backend follows a pragmatic layered structure:
+- **`api`** translates HTTP requests and responses
+- **`application`** coordinates use cases and persistence
+- **`domain`** holds the actual paper-trading rules
+
+This makes the order lifecycle and portfolio logic visible without introducing unnecessary framework abstraction.
+
+### Frontend organization
+The frontend keeps the dashboard straightforward:
+- **`app`** defines runtime entrypoints
+- **`components`** map closely to visible product panels
+- **`lib`** centralizes backend access and client helpers
+- **`types`** keep request/response usage explicit in TypeScript
+
+## Related Docs
+
+- [Runtime lifecycle](runtime-lifecycle.md)
+- [Core ERD](erd.md)
+- [Current product scope](mvp.md)
