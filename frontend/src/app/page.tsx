@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { InstrumentSearch } from '@/components/instrument-search';
 import { MarketChartPanel } from '@/components/market-chart-panel';
@@ -8,6 +8,7 @@ import { OrderForm } from '@/components/order-form';
 import { OrderList } from '@/components/order-list';
 import { PortfolioSummarySection } from '@/components/portfolio-summary';
 import { PositionsTable } from '@/components/positions-table';
+import { QuantSignalPanel } from '@/components/quant-signal-panel';
 import { QuotePanel } from '@/components/quote-panel';
 import {
   createOrder,
@@ -15,6 +16,7 @@ import {
   fetchOrders,
   fetchPortfolioSummary,
   fetchPositions,
+  fetchQuantSignal,
   fetchQuote,
   searchInstruments,
 } from '@/lib/api';
@@ -26,6 +28,7 @@ import type {
   Order,
   PortfolioSummary,
   PositionItem,
+  QuantSignal,
 } from '@/types/api';
 
 interface DashboardState {
@@ -75,8 +78,13 @@ export default function HomePage() {
   const [candles, setCandles] = useState<MarketCandleSeries | null>(null);
   const [candlesLoading, setCandlesLoading] = useState(false);
   const [candlesError, setCandlesError] = useState<string | null>(null);
+  const [quantModeEnabled, setQuantModeEnabled] = useState(false);
+  const [quantSignal, setQuantSignal] = useState<QuantSignal | null>(null);
+  const [quantLoading, setQuantLoading] = useState(false);
+  const [quantError, setQuantError] = useState<string | null>(null);
   const quoteRequestGuardRef = useRef(createSymbolRequestGuard());
   const candlesRequestGuardRef = useRef(createSymbolRequestGuard());
+  const quantRequestGuardRef = useRef(createSymbolRequestGuard());
 
   const formatCurrency = useCallback((value: number) => currencyFormatter.format(value), []);
   const formatNumber = useCallback((value: number) => numberFormatter.format(value), []);
@@ -193,6 +201,48 @@ export default function HomePage() {
     }
   }, []);
 
+  const resetQuantSignal = useCallback(() => {
+    quantRequestGuardRef.current.reset();
+    setQuantSignal(null);
+    setQuantLoading(false);
+    setQuantError(null);
+  }, []);
+
+  const loadQuantSignal = useCallback(async (symbol: string) => {
+    const normalizedSymbol = symbol.trim().toUpperCase();
+
+    if (!normalizedSymbol) {
+      resetQuantSignal();
+      return;
+    }
+
+    const requestToken = quantRequestGuardRef.current.begin(normalizedSymbol);
+
+    setQuantLoading(true);
+    setQuantSignal(null);
+    setQuantError(null);
+
+    try {
+      const nextSignal = await fetchQuantSignal(normalizedSymbol);
+      if (!quantRequestGuardRef.current.isCurrent(requestToken)) {
+        return;
+      }
+
+      setQuantSignal(nextSignal);
+    } catch (loadError) {
+      if (!quantRequestGuardRef.current.isCurrent(requestToken)) {
+        return;
+      }
+
+      setQuantSignal(null);
+      setQuantError(loadError instanceof Error ? loadError.message : 'Unable to load quant signal.');
+    } finally {
+      if (quantRequestGuardRef.current.isCurrent(requestToken)) {
+        setQuantLoading(false);
+      }
+    }
+  }, [resetQuantSignal]);
+
   const loadSelectedInstrumentMarketData = useCallback(async (symbol: string) => {
     await Promise.all([loadQuote(symbol), loadCandles(symbol)]);
   }, [loadCandles, loadQuote]);
@@ -200,6 +250,20 @@ export default function HomePage() {
   useEffect(() => {
     void loadDashboard(true);
   }, [loadDashboard]);
+
+  useEffect(() => {
+    if (!quantModeEnabled) {
+      resetQuantSignal();
+      return;
+    }
+
+    if (!selectedInstrument) {
+      resetQuantSignal();
+      return;
+    }
+
+    void loadQuantSignal(selectedInstrument.symbol);
+  }, [loadQuantSignal, quantModeEnabled, resetQuantSignal, selectedInstrument]);
 
   const handleSubmitOrder = useCallback(async (input: Parameters<typeof createOrder>[0]) => {
     setSubmitting(true);
@@ -247,6 +311,18 @@ export default function HomePage() {
 
     void loadCandles(selectedInstrument.symbol);
   }, [loadCandles, selectedInstrument]);
+
+  const handleRefreshQuantSignal = useCallback(() => {
+    if (!selectedInstrument || !quantModeEnabled) {
+      return;
+    }
+
+    void loadQuantSignal(selectedInstrument.symbol);
+  }, [loadQuantSignal, quantModeEnabled, selectedInstrument]);
+
+  const handleQuantModeChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setQuantModeEnabled(event.target.checked);
+  }, []);
 
   const statusText = useMemo(() => {
     if (loading) {
@@ -301,6 +377,28 @@ export default function HomePage() {
         </div>
 
         <div className="stack">
+          <section className="panel">
+            <div className="panel-header">
+              <div>
+                <h2>Mode</h2>
+                <p>Enable the placeholder quant-worker experience for the selected symbol.</p>
+              </div>
+            </div>
+            <label className="mode-toggle" htmlFor="quant-mode-toggle">
+              <input
+                id="quant-mode-toggle"
+                className="mode-toggle-input"
+                type="checkbox"
+                checked={quantModeEnabled}
+                onChange={handleQuantModeChange}
+              />
+              <span className="mode-toggle-copy">
+                <strong>Quant mode</strong>
+                <small>Show BUY/HOLD/SELL placeholder signals derived from the latest quote.</small>
+              </span>
+            </label>
+          </section>
+
           <InstrumentSearch
             results={searchResults}
             loading={searchLoading}
@@ -318,6 +416,16 @@ export default function HomePage() {
             error={quoteError}
             onRefreshQuote={handleRefreshQuote}
           />
+
+          {quantModeEnabled ? (
+            <QuantSignalPanel
+              selectedInstrument={selectedInstrument}
+              signal={quantSignal}
+              loading={quantLoading}
+              error={quantError}
+              onRefresh={handleRefreshQuantSignal}
+            />
+          ) : null}
 
           <MarketChartPanel
             selectedInstrument={selectedInstrument}

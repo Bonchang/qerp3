@@ -7,10 +7,12 @@ import {
   OrderListResponse,
   PortfolioPositionsResponse,
   PortfolioSummary,
+  QuantSignal,
 } from '@/types/api';
 
 export const DEFAULT_API_BASE_URL = 'http://localhost:8080';
 export const FRONTEND_PROXY_PREFIX = '/api/backend';
+export const FRONTEND_QUANT_PREFIX = '/api/quant';
 
 export function getApiBaseUrl(value = process.env.NEXT_PUBLIC_API_BASE_URL): string {
   const raw = value?.trim();
@@ -56,8 +58,8 @@ async function parseJsonSafely(response: Response): Promise<unknown> {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${FRONTEND_PROXY_PREFIX}${path}`, {
+async function requestPath<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(path, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
@@ -73,6 +75,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   return payload as T;
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  return requestPath<T>(`${FRONTEND_PROXY_PREFIX}${path}`, init);
 }
 
 export async function fetchPortfolioSummary(): Promise<PortfolioSummary> {
@@ -121,6 +127,25 @@ export async function fetchCandles(symbol: string, interval = '1D', limit = 30):
   });
 
   return request<MarketCandleSeries>(`/market/candles/${encodeURIComponent(normalizedSymbol)}?${params.toString()}`);
+}
+
+export async function fetchQuantSignal(symbol: string, thresholdPercent?: number): Promise<QuantSignal> {
+  const normalizedSymbol = symbol.trim().toUpperCase();
+
+  if (!normalizedSymbol) {
+    throw new Error('Symbol is required.');
+  }
+
+  const params = new URLSearchParams();
+
+  if (thresholdPercent !== undefined) {
+    params.set('thresholdPercent', String(thresholdPercent));
+  }
+
+  const queryString = params.toString();
+  const path = `${FRONTEND_QUANT_PREFIX}/signals/${encodeURIComponent(normalizedSymbol)}${queryString ? `?${queryString}` : ''}`;
+
+  return requestPath<QuantSignal>(path);
 }
 
 export async function fetchOrders(): Promise<OrderListResponse> {

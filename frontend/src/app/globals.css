@@ -252,6 +252,33 @@ th {
   opacity: 0.7;
 }
 
+.mode-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.mode-toggle-input {
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+}
+
+.mode-toggle-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.mode-toggle-copy strong {
+  font-size: 0.98rem;
+}
+
+.mode-toggle-copy small {
+  color: #617089;
+  font-size: 0.88rem;
+}
+
 .status-note {
   margin-top: 10px;
   color: #6a7690;
@@ -350,6 +377,72 @@ th {
 
 .quote-change-neutral {
   color: #5b6880;
+}
+
+.quant-signal-layout {
+  display: grid;
+  gap: 16px;
+}
+
+.quant-signal-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.signal-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.signal-pill-buy {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.signal-pill-hold {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.signal-pill-sell {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.quant-explanation {
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.quant-explanation strong {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.quant-explanation p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.quant-explanation.signal-pill-buy {
+  background: #f0fdf4;
+}
+
+.quant-explanation.signal-pill-hold {
+  background: #f8fafc;
+}
+
+.quant-explanation.signal-pill-sell {
+  background: #fef2f2;
 }
 
 .market-chart-layout {

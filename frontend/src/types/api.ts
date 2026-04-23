@@ -49,6 +49,20 @@ export interface MarketQuote {
   asOf: string;
 }
 
+export type QuantSignalDecision = 'BUY' | 'HOLD' | 'SELL';
+
+export interface QuantSignal {
+  symbol: string;
+  observedPrice: number;
+  referencePrice: number;
+  thresholdPercent: number;
+  priceChangePercent: number;
+  signal: QuantSignalDecision;
+  explanation: string;
+  generatedAt: string;
+  source: string;
+}
+
 export interface MarketCandle {
   timestamp: string;
   open: number;
