@@ -1,13 +1,9 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import test from 'node:test';
 
 import {
   DEFAULT_API_BASE_URL,
   FRONTEND_PROXY_PREFIX,
-  FRONTEND_QUANT_PREFIX,
   fetchCandles,
   fetchQuantSignal,
   fetchQuote,
@@ -18,7 +14,6 @@ import {
 } from './api';
 import { buildChartGeometry, formatSignedPercent, formatUtcSessionDate, summarizeCandles } from '@/components/market-chart-panel';
 import { buildOrderFormQuantRecommendation } from './order-form-quant';
-import { buildQuantWorkerArgs, deriveReferencePriceFromQuote, normalizeQuantThresholdPercent, resolveQuantWorkerDirectory } from './quant-worker';
 import { createSymbolRequestGuard } from './request-guard';
 
 test('getApiBaseUrl falls back to localhost when env is missing', () => {
@@ -269,7 +264,7 @@ test('fetchCandles uppercases the symbol and uses the candles proxy path', async
   }
 });
 
-test('fetchQuantSignal uses the quant route without the backend proxy prefix', async () => {
+test('fetchQuantSignal uses the backend proxy path for quant signals', async () => {
   const originalFetch = globalThis.fetch;
   const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
 
@@ -279,9 +274,9 @@ test('fetchQuantSignal uses the quant route without the backend proxy prefix', a
       JSON.stringify({
         symbol: 'AAPL',
         observedPrice: 180,
-        referencePrice: 178,
+        referencePrice: 178.75,
         thresholdPercent: 2,
-        priceChangePercent: 1.12,
+        priceChangePercent: 0.6993006993,
         signal: 'HOLD',
         explanation: 'AAPL 변동폭이 임계값 ±2.00% 이내라 HOLD placeholder 신호를 반환했습니다.',
         generatedAt: '2026-04-23T13:33:00Z',
@@ -297,68 +292,15 @@ test('fetchQuantSignal uses the quant route without the backend proxy prefix', a
   }) as typeof fetch;
 
   try {
-    const response = await fetchQuantSignal(' aapl ');
+    const response = await fetchQuantSignal(' aapl ', 0.5);
 
     assert.equal(response.symbol, 'AAPL');
     assert.equal(response.signal, 'HOLD');
     assert.equal(calls.length, 1);
-    assert.equal(calls[0]?.input, `${FRONTEND_QUANT_PREFIX}/signals/AAPL`);
+    assert.equal(calls[0]?.input, `${FRONTEND_PROXY_PREFIX}/quant/signals/AAPL?thresholdPercent=0.5`);
     assert.equal(calls[0]?.init?.cache, 'no-store');
   } finally {
     globalThis.fetch = originalFetch;
-  }
-});
-
-test('normalizeQuantThresholdPercent defaults to 2 and rejects negative values', () => {
-  assert.equal(normalizeQuantThresholdPercent(null), 2);
-  assert.equal(normalizeQuantThresholdPercent(' 3.5 '), 3.5);
-  assert.throws(() => normalizeQuantThresholdPercent('-1'), /thresholdPercent must be a non-negative number\./);
-});
-
-test('deriveReferencePriceFromQuote uses price minus change', () => {
-  assert.equal(
-    deriveReferencePriceFromQuote({
-      symbol: 'AAPL',
-      price: 180,
-      currency: 'USD',
-      change: 2,
-      changePercent: 1.12,
-      asOf: '2026-04-23T13:33:00Z',
-    }),
-    178,
-  );
-});
-
-test('buildQuantWorkerArgs preserves the placeholder quant-worker contract', () => {
-  assert.deepEqual(buildQuantWorkerArgs({ symbol: ' msft ', observedPrice: 320.5, referencePrice: 315, thresholdPercent: 2 }), [
-    '-m',
-    'app.main',
-    '--symbol',
-    'MSFT',
-    '--price',
-    '320.5',
-    '--reference-price',
-    '315',
-    '--threshold-percent',
-    '2',
-  ]);
-});
-
-test('resolveQuantWorkerDirectory finds the repo worker from a standalone runtime path', () => {
-  const fixtureRoot = mkdtempSync(path.join(os.tmpdir(), 'qerp3-quant-worker-'));
-  const repoRoot = path.join(fixtureRoot, 'qerp3');
-  const workerDirectory = path.join(repoRoot, 'quant-worker');
-  const standaloneDirectory = path.join(repoRoot, 'frontend', '.next', 'standalone');
-
-  mkdirSync(path.join(workerDirectory, 'app'), { recursive: true });
-  mkdirSync(standaloneDirectory, { recursive: true });
-  writeFileSync(path.join(workerDirectory, 'app', 'main.py'), 'print("ok")\n');
-  writeFileSync(path.join(standaloneDirectory, 'server.js'), '');
-
-  try {
-    assert.equal(resolveQuantWorkerDirectory(standaloneDirectory, path.join(standaloneDirectory, 'server.js')), workerDirectory);
-  } finally {
-    rmSync(fixtureRoot, { force: true, recursive: true });
   }
 });
 

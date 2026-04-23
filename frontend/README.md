@@ -7,6 +7,7 @@ This milestone adds a minimal Next.js App Router frontend under `frontend/`.
 - Positions list
 - Simple order form
 - Recent orders list
+- Backend-backed quant signal mode
 - Friendly fallback when the backend is unavailable
 - Configurable backend base URL via `NEXT_PUBLIC_API_BASE_URL`
 
@@ -21,6 +22,7 @@ This milestone adds a minimal Next.js App Router frontend under `frontend/`.
 
 ## Notes
 - Browser requests go through the Next.js proxy route at `/api/backend/...` so the UI can talk to the existing backend without requiring backend CORS changes.
+- Quant mode also uses the same proxy route and loads signals from `/api/backend/quant/signals/{symbol}`.
 - The UI is intentionally minimal and unopinionated.
 - Verification commands:
   - `npm test`

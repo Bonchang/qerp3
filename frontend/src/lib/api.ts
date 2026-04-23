@@ -12,7 +12,6 @@ import {
 
 export const DEFAULT_API_BASE_URL = 'http://localhost:8080';
 export const FRONTEND_PROXY_PREFIX = '/api/backend';
-export const FRONTEND_QUANT_PREFIX = '/api/quant';
 
 export function getApiBaseUrl(value = process.env.NEXT_PUBLIC_API_BASE_URL): string {
   const raw = value?.trim();
@@ -143,9 +142,9 @@ export async function fetchQuantSignal(symbol: string, thresholdPercent?: number
   }
 
   const queryString = params.toString();
-  const path = `${FRONTEND_QUANT_PREFIX}/signals/${encodeURIComponent(normalizedSymbol)}${queryString ? `?${queryString}` : ''}`;
+  const path = `/quant/signals/${encodeURIComponent(normalizedSymbol)}${queryString ? `?${queryString}` : ''}`;
 
-  return requestPath<QuantSignal>(path);
+  return request<QuantSignal>(path);
 }
 
 export async function fetchOrders(): Promise<OrderListResponse> {

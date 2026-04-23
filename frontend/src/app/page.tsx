@@ -381,7 +381,7 @@ export default function HomePage() {
             <div className="panel-header">
               <div>
                 <h2>Mode</h2>
-                <p>Enable the placeholder quant-worker experience for the selected symbol.</p>
+                <p>Enable backend quant mode for the selected symbol.</p>
               </div>
             </div>
             <label className="mode-toggle" htmlFor="quant-mode-toggle">
@@ -394,7 +394,7 @@ export default function HomePage() {
               />
               <span className="mode-toggle-copy">
                 <strong>Quant mode</strong>
-                <small>Show BUY/HOLD/SELL placeholder signals derived from the latest quote.</small>
+                <small>Show backend BUY/HOLD/SELL signals derived from the latest quote.</small>
               </span>
             </label>
           </section>

@@ -24,6 +24,7 @@ QERP는 우선 페이퍼 트레이딩 경험 자체를 깔끔하게 제공하는
 - 지원 심볼 대상 시세 스냅샷 조회
 - 차트 렌더링용 결정적 일봉 캔들 데이터 조회
 - quant-worker 플레이스홀더 CLI: 결정적 `BUY` / `HOLD` / `SELL` 신호와 짧은 설명 JSON 반환
+- 백엔드 quant signal API: 시세 컨텍스트를 바탕으로 quant-worker CLI를 동기 호출해 현재 신호 JSON 반환
 - Next.js 대시보드 UI
   - 종목 검색
   - 시세 패널
@@ -40,7 +41,7 @@ QERP는 우선 페이퍼 트레이딩 경험 자체를 깔끔하게 제공하는
 - 실제 브로커 연동 또는 실주문 라우팅
 - 사용자별 포트폴리오 분리
 - 실시간 스트리밍 시세
-- 자동화된 퀀트 전략 실행, 스케줄링, 백엔드 연동형 워커 처리
+- 자동화된 퀀트 전략 실행, 스케줄링, 비동기 워커 처리
 
 ## 공개 제품 표면
 
@@ -56,6 +57,7 @@ QERP는 우선 페이퍼 트레이딩 경험 자체를 깔끔하게 제공하는
 | `GET /api/v1/instruments/search?q=...` | 내장 지원 종목 카탈로그를 검색합니다. |
 | `GET /api/v1/market/quotes/{symbol}` | 지원 심볼의 결정적 시세 스냅샷을 반환합니다. |
 | `GET /api/v1/market/candles/{symbol}?interval=1D&limit=30` | 지원 심볼의 결정적 일봉 캔들 데이터를 반환합니다. |
+| `GET /api/v1/quant/signals/{symbol}` | 최신 시세와 기준가 컨텍스트를 바탕으로 quant-worker 플레이스홀더 신호를 반환합니다. |
 | `GET /api/v1/portfolio` | 페이퍼 포트폴리오의 핵심 요약 지표를 반환합니다. |
 | `GET /api/v1/portfolio/positions` | 현재 보유 중인 포지션 목록을 반환합니다. |
 | `POST /api/v1/orders` / `GET /api/v1/orders` / `GET /api/v1/orders/{orderId}` / `POST /api/v1/orders/{orderId}/cancel` | 페이퍼 주문 생성, 조회, 목록 확인, 취소를 제공합니다. |
@@ -73,7 +75,7 @@ QERP는 우선 페이퍼 트레이딩 경험 자체를 깔끔하게 제공하는
 | 프론트엔드 | Next.js App Router, TypeScript, React | 대시보드 UI, 백엔드 프록시, 클라이언트 데이터 로딩/렌더링 |
 | 백엔드 | Spring Boot 3, Java 21, Gradle | REST API, 주문 시뮬레이션, 포트폴리오 계산, 시장 데이터 접근 |
 | 데이터베이스 | PostgreSQL, Flyway | 주문 기록과 포트폴리오 상태 저장 |
-| Quant worker | Python 플레이스홀더 | 로컬 CLI와 테스트 가능한 신호 계약 제공, 백엔드 연동은 아직 없음 |
+| Quant worker | Python 플레이스홀더 | 로컬 CLI와 테스트 가능한 신호 계약 제공, 백엔드가 온디맨드 quant signal 요청 시 동기 호출 |
 
 ## 시스템 컨텍스트
 
@@ -231,7 +233,12 @@ npm install
 npm run dev
 ```
 
-기본 설정에서 프론트엔드는 `http://localhost:8080` 백엔드를 대상으로 하며, 브라우저 요청은 `/api/backend/...`를 통해 전달합니다.
+기본 설정에서 프론트엔드는 `http://localhost:8080` 백엔드를 대상으로 하며, 브라우저 요청은 `/api/backend/...`를 통해 전달합니다. Quant 모드도 동일한 프록시 경로를 통해 `GET /api/v1/quant/signals/{symbol}` 백엔드 API를 사용합니다.
+
+백엔드 quant signal API는 기본적으로 저장소 루트의 `quant-worker/`를 탐색해 `python3 -m app.main`을 실행합니다. 필요하면 아래 환경 변수로 로컬 경로를 덮어쓸 수 있습니다.
+
+- `QERP3_QUANT_WORKER_DIR`: `quant-worker` 디렉터리 절대/상대 경로
+- `QERP3_QUANT_PYTHON_BIN`: 워커 실행에 사용할 Python 바이너리 경로
 
 ### quant-worker 플레이스홀더 실행
 

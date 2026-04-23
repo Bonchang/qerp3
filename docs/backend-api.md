@@ -4,7 +4,7 @@
 
 이 문서는 현재 QERP가 공개적으로 제공하는 백엔드 API 계약을 정리합니다.
 
-- 포함 범위: 주문 생성/조회/취소, 포트폴리오 조회, 종목 검색, 시세/캔들 조회
+- 포함 범위: 주문 생성/조회/취소, 포트폴리오 조회, 종목 검색, 시세/캔들 조회, quant signal 조회
 - 제외 범위: 인증 상세 구현, 실제 브로커 연동, 고급 리스크 엔진, 자동 체결 재평가 워커
 - 전제: 모든 주문은 **페이퍼 트레이딩 시뮬레이션**이며, 시장 데이터는 **결정적 규칙**으로 제공됩니다.
 
@@ -22,6 +22,7 @@
 7. `GET /api/v1/instruments/search`
 8. `GET /api/v1/market/quotes/{symbol}`
 9. `GET /api/v1/market/candles/{symbol}`
+10. `GET /api/v1/quant/signals/{symbol}`
 
 ### 공통 가정
 - 인증: 현재 미구현입니다.
@@ -62,6 +63,7 @@
 - `INSUFFICIENT_CASH` (`409`)
 - `INSUFFICIENT_POSITION_QUANTITY` (`409`)
 - `MARKET_DATA_UNAVAILABLE` (`409`)
+- `QUANT_WORKER_FAILED` (`500`)
 - `INTERNAL_ERROR` (`500`)
 
 ---
@@ -413,6 +415,41 @@
 #### 오류 사례
 - `400 VALIDATION_ERROR` (`symbol` 형식 오류, `interval` 미지원, `limit` 범위 오류)
 - `404 NOT_FOUND` (지원하지 않는 심볼)
+
+---
+
+### 6.10 `GET /api/v1/quant/signals/{symbol}`
+#### 설명
+지원 심볼의 최신 시세 스냅샷을 불러온 뒤, 백엔드가 `quant-worker` 플레이스홀더 CLI를 동기 호출해 현재 quant signal JSON을 반환합니다.
+
+#### 쿼리 파라미터
+- `thresholdPercent`: 선택값, 기본값 `2`, `HOLD` 구간의 절대 퍼센트 밴드
+
+#### 응답 JSON (`200`)
+```json
+{
+  "symbol": "AAPL",
+  "observedPrice": 180.0,
+  "referencePrice": 178.75,
+  "thresholdPercent": 2.0,
+  "priceChangePercent": 0.6993006993,
+  "signal": "HOLD",
+  "explanation": "AAPL 변동폭이 임계값 ±2.00% 이내라 HOLD placeholder 신호를 반환했습니다.",
+  "generatedAt": "2026-04-23T13:33:00Z",
+  "source": "placeholder-v1"
+}
+```
+
+#### 동작 메모
+- `observedPrice`는 `GET /api/v1/market/quotes/{symbol}`의 최신 `price`를 사용합니다.
+- `referencePrice`는 현재 quote 기준으로 `price - change` 값에서 유도합니다.
+- 백엔드는 기본적으로 저장소 루트의 `quant-worker/`를 탐색해 `python3 -m app.main`을 실행합니다.
+- 필요 시 `QERP3_QUANT_WORKER_DIR`, `QERP3_QUANT_PYTHON_BIN` 환경 변수로 워커 경로와 Python 바이너리를 덮어쓸 수 있습니다.
+
+#### 오류 사례
+- `400 VALIDATION_ERROR` (`symbol` 형식 오류, `thresholdPercent` 음수/비수치)
+- `404 NOT_FOUND` (지원하지 않는 심볼)
+- `500 QUANT_WORKER_FAILED` (워커 실행 실패)
 
 ---
 

@@ -50,8 +50,8 @@ export function QuantSignalPanel({ selectedInstrument, signal, loading, error, o
           <h2>Quant signal</h2>
           <p>
             {selectedInstrument
-              ? `${selectedInstrument.name} · placeholder quant-worker signal`
-              : 'Enable quant mode and select a symbol to load a placeholder signal.'}
+              ? `${selectedInstrument.name} · backend quant signal`
+              : 'Enable quant mode and select a symbol to load a backend quant signal.'}
           </p>
         </div>
         <button className="toolbar-button" type="button" onClick={onRefresh} disabled={!symbol || loading}>
@@ -59,9 +59,9 @@ export function QuantSignalPanel({ selectedInstrument, signal, loading, error, o
         </button>
       </div>
 
-      {!symbol ? <div className="empty-state">Select a symbol to generate a placeholder quant signal.</div> : null}
+      {!symbol ? <div className="empty-state">Select a symbol to load a backend quant signal.</div> : null}
 
-      {symbol && loading ? <div className="status-note">Generating placeholder signal for {symbol}…</div> : null}
+      {symbol && loading ? <div className="status-note">Loading backend quant signal for {symbol}…</div> : null}
 
       {symbol && error ? (
         <div className="error-state">
