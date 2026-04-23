@@ -17,6 +17,7 @@ import {
   toOrderRequestBody,
 } from './api';
 import { buildChartGeometry, formatSignedPercent, formatUtcSessionDate, summarizeCandles } from '@/components/market-chart-panel';
+import { buildOrderFormQuantRecommendation } from './order-form-quant';
 import { buildQuantWorkerArgs, deriveReferencePriceFromQuote, normalizeQuantThresholdPercent, resolveQuantWorkerDirectory } from './quant-worker';
 import { createSymbolRequestGuard } from './request-guard';
 
@@ -75,6 +76,88 @@ test('toOrderRequestBody includes limitPrice for limit orders', () => {
       limitPrice: 300.25,
     },
   );
+});
+
+test('buildOrderFormQuantRecommendation returns actionable BUY guidance', () => {
+  const recommendation = buildOrderFormQuantRecommendation({
+    quantModeEnabled: true,
+    orderSymbol: 'aapl',
+    signal: {
+      symbol: 'AAPL',
+      observedPrice: 180,
+      referencePrice: 178,
+      thresholdPercent: 2,
+      priceChangePercent: 1.12,
+      signal: 'BUY',
+      explanation: 'placeholder',
+      generatedAt: '2026-04-23T13:33:00Z',
+      source: 'placeholder-v1',
+    },
+  });
+
+  assert.deepEqual(recommendation, {
+    symbol: 'AAPL',
+    signal: 'BUY',
+    title: 'Quant suggests a BUY setup for AAPL',
+    summary: 'Use the signal to prefill the order side, then review size and order type before submitting.',
+    actionDescription: 'Applying this suggestion sets the side to BUY and can seed the limit price when you are using a limit order.',
+    actionLabel: 'Apply quant suggestion',
+    isActionable: true,
+    suggestedSide: 'BUY',
+    suggestedLimitPrice: 180,
+    toneClassName: 'signal-pill-buy',
+  });
+});
+
+test('buildOrderFormQuantRecommendation keeps HOLD informational only', () => {
+  const recommendation = buildOrderFormQuantRecommendation({
+    quantModeEnabled: true,
+    orderSymbol: 'AAPL',
+    signal: {
+      symbol: 'AAPL',
+      observedPrice: 180,
+      referencePrice: 178,
+      thresholdPercent: 2,
+      priceChangePercent: 0.4,
+      signal: 'HOLD',
+      explanation: 'placeholder',
+      generatedAt: '2026-04-23T13:33:00Z',
+      source: 'placeholder-v1',
+    },
+  });
+
+  assert.deepEqual(recommendation, {
+    symbol: 'AAPL',
+    signal: 'HOLD',
+    title: 'Quant is neutral on AAPL',
+    summary: 'Current signal is HOLD, so the form stays manual and no trade side is suggested.',
+    actionDescription: 'Treat this as informational context only. Review the quote and chart before deciding whether to trade.',
+    actionLabel: null,
+    isActionable: false,
+    suggestedSide: null,
+    suggestedLimitPrice: 180,
+    toneClassName: 'signal-pill-hold',
+  });
+});
+
+test('buildOrderFormQuantRecommendation hides stale symbol recommendations', () => {
+  const recommendation = buildOrderFormQuantRecommendation({
+    quantModeEnabled: true,
+    orderSymbol: 'MSFT',
+    signal: {
+      symbol: 'AAPL',
+      observedPrice: 180,
+      referencePrice: 178,
+      thresholdPercent: 2,
+      priceChangePercent: 1.12,
+      signal: 'BUY',
+      explanation: 'placeholder',
+      generatedAt: '2026-04-23T13:33:00Z',
+      source: 'placeholder-v1',
+    },
+  });
+
+  assert.equal(recommendation, null);
 });
 
 test('searchInstruments uses the frontend proxy path with encoded query params', async () => {

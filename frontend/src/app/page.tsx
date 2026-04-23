@@ -440,6 +440,8 @@ export default function HomePage() {
             onSubmitOrder={handleSubmitOrder}
             submitting={submitting}
             selectedSymbol={selectedInstrument?.symbol ?? null}
+            quantModeEnabled={quantModeEnabled}
+            quantSignal={quantSignal}
           />
 
           <section className="panel">

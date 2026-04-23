@@ -157,6 +157,68 @@ button {
   cursor: wait;
 }
 
+.order-form-quant-card {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+  border-radius: 14px;
+  border: 1px solid #d8e0ef;
+  padding: 16px;
+}
+
+.order-form-quant-card.signal-pill-buy {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.order-form-quant-card.signal-pill-hold {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.order-form-quant-card.signal-pill-sell {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.order-form-quant-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.order-form-quant-header strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.order-form-quant-eyebrow {
+  margin-bottom: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #56627a;
+}
+
+.order-form-quant-copy {
+  margin: 0;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.order-form-quant-meta {
+  display: grid;
+  gap: 6px;
+  color: #475569;
+  font-size: 0.92rem;
+}
+
+.order-form-quant-button {
+  justify-self: flex-start;
+}
+
 .instrument-search-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

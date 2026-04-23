@@ -2,12 +2,15 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 
-import type { CreateOrderInput, OrderSide, OrderType } from '@/types/api';
+import { buildOrderFormQuantRecommendation } from '@/lib/order-form-quant';
+import type { CreateOrderInput, OrderSide, OrderType, QuantSignal } from '@/types/api';
 
 interface Props {
   onSubmitOrder: (input: CreateOrderInput) => Promise<void>;
   submitting: boolean;
   selectedSymbol?: string | null;
+  quantModeEnabled: boolean;
+  quantSignal: QuantSignal | null;
 }
 
 const initialState = {
@@ -18,12 +21,27 @@ const initialState = {
   limitPrice: '',
 };
 
-export function OrderForm({ onSubmitOrder, submitting, selectedSymbol }: Props) {
+const priceFormatter = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+export function OrderForm({ onSubmitOrder, submitting, selectedSymbol, quantModeEnabled, quantSignal }: Props) {
   const [formState, setFormState] = useState(initialState);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [quantFeedback, setQuantFeedback] = useState<string | null>(null);
 
   const showLimitPrice = useMemo(() => formState.orderType === 'LIMIT', [formState.orderType]);
+  const quantRecommendation = useMemo(
+    () =>
+      buildOrderFormQuantRecommendation({
+        quantModeEnabled,
+        signal: quantSignal,
+        orderSymbol: formState.symbol,
+      }),
+    [formState.symbol, quantModeEnabled, quantSignal],
+  );
 
   useEffect(() => {
     if (!selectedSymbol) {
@@ -36,10 +54,38 @@ export function OrderForm({ onSubmitOrder, submitting, selectedSymbol }: Props) 
     }));
   }, [selectedSymbol]);
 
+  useEffect(() => {
+    setQuantFeedback(null);
+  }, [quantRecommendation?.signal, quantRecommendation?.symbol]);
+
+  function handleApplyQuantSuggestion() {
+    if (!quantRecommendation?.isActionable || !quantRecommendation.suggestedSide) {
+      return;
+    }
+
+    const suggestedSide = quantRecommendation.suggestedSide;
+
+    setError(null);
+    setSuccess(null);
+    setQuantFeedback(
+      `Applied ${quantRecommendation.signal} suggestion for ${quantRecommendation.symbol}. Review the order and submit manually.`,
+    );
+    setFormState((current) => ({
+      ...current,
+      symbol: quantRecommendation.symbol,
+      side: suggestedSide,
+      limitPrice:
+        current.orderType === 'LIMIT'
+          ? quantRecommendation.suggestedLimitPrice.toFixed(2)
+          : current.limitPrice,
+    }));
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     setSuccess(null);
+    setQuantFeedback(null);
 
     const quantity = Number(formState.quantity);
     const limitPrice = formState.limitPrice ? Number(formState.limitPrice) : undefined;
@@ -87,6 +133,32 @@ export function OrderForm({ onSubmitOrder, submitting, selectedSymbol }: Props) 
           <p>Submit a paper order to the existing backend API.</p>
         </div>
       </div>
+
+      {quantRecommendation ? (
+        <div className={`order-form-quant-card ${quantRecommendation.toneClassName}`}>
+          <div className="order-form-quant-header">
+            <div>
+              <div className="order-form-quant-eyebrow">Quant recommendation</div>
+              <strong>{quantRecommendation.title}</strong>
+            </div>
+            <span className={`signal-pill ${quantRecommendation.toneClassName}`}>{quantRecommendation.signal}</span>
+          </div>
+          <p className="order-form-quant-copy">{quantRecommendation.summary}</p>
+          <p className="order-form-quant-copy">{quantSignal?.explanation}</p>
+          <div className="order-form-quant-meta">
+            <span>Observed price {priceFormatter.format(quantRecommendation.suggestedLimitPrice)}</span>
+            <span>{quantRecommendation.actionDescription}</span>
+          </div>
+          {quantRecommendation.isActionable ? (
+            <button className="toolbar-button order-form-quant-button" type="button" onClick={handleApplyQuantSuggestion}>
+              {quantRecommendation.actionLabel}
+            </button>
+          ) : (
+            <div className="status-note">No side will be prefilled for HOLD. Trade only if you decide to override manually.</div>
+          )}
+          {quantFeedback ? <div className="status-note">{quantFeedback}</div> : null}
+        </div>
+      ) : null}
 
       <form className="order-form" onSubmit={handleSubmit}>
         <label>
