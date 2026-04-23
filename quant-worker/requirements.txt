@@ -1,0 +1,2 @@
+# This placeholder worker is intentionally stdlib-only.
+# Installing this file should not pull any third-party dependencies.

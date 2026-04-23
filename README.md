@@ -23,6 +23,7 @@ QERP는 우선 페이퍼 트레이딩 경험 자체를 깔끔하게 제공하는
 - 내장 종목 카탈로그 기반 종목 검색
 - 지원 심볼 대상 시세 스냅샷 조회
 - 차트 렌더링용 결정적 일봉 캔들 데이터 조회
+- quant-worker 플레이스홀더 CLI: 결정적 `BUY` / `HOLD` / `SELL` 신호와 짧은 설명 JSON 반환
 - Next.js 대시보드 UI
   - 종목 검색
   - 시세 패널
@@ -39,7 +40,7 @@ QERP는 우선 페이퍼 트레이딩 경험 자체를 깔끔하게 제공하는
 - 실제 브로커 연동 또는 실주문 라우팅
 - 사용자별 포트폴리오 분리
 - 실시간 스트리밍 시세
-- 자동화된 퀀트 전략 실행 또는 워커 기반 시그널 처리
+- 자동화된 퀀트 전략 실행, 스케줄링, 백엔드 연동형 워커 처리
 
 ## 공개 제품 표면
 
@@ -72,7 +73,7 @@ QERP는 우선 페이퍼 트레이딩 경험 자체를 깔끔하게 제공하는
 | 프론트엔드 | Next.js App Router, TypeScript, React | 대시보드 UI, 백엔드 프록시, 클라이언트 데이터 로딩/렌더링 |
 | 백엔드 | Spring Boot 3, Java 21, Gradle | REST API, 주문 시뮬레이션, 포트폴리오 계산, 시장 데이터 접근 |
 | 데이터베이스 | PostgreSQL, Flyway | 주문 기록과 포트폴리오 상태 저장 |
-| Quant worker | Python 플레이스홀더 | 향후 자동화 연동을 위한 경계, 현재 활성 런타임 로직 없음 |
+| Quant worker | Python 플레이스홀더 | 로컬 CLI와 테스트 가능한 신호 계약 제공, 백엔드 연동은 아직 없음 |
 
 ## 시스템 컨텍스트
 
@@ -207,6 +208,7 @@ docker compose up --build
 - Java 21
 - PostgreSQL
 - Node.js 20+
+- Python 3.12+
 
 ### 백엔드 수동 실행
 
@@ -231,6 +233,21 @@ npm run dev
 
 기본 설정에서 프론트엔드는 `http://localhost:8080` 백엔드를 대상으로 하며, 브라우저 요청은 `/api/backend/...`를 통해 전달합니다.
 
+### quant-worker 플레이스홀더 실행
+
+```bash
+cd quant-worker
+python3 -m app.main \
+  --symbol AAPL \
+  --price 95 \
+  --reference-price 100 \
+  --threshold-percent 2 \
+  --generated-at 2026-04-23T13:33:00Z \
+  --pretty
+```
+
+이 명령은 기준가 대비 변동률만으로 `BUY`, `HOLD`, `SELL` 중 하나를 선택해 JSON으로 반환합니다. 자세한 계약은 [docs/quant-worker-contract.md](docs/quant-worker-contract.md)를 참고하세요.
+
 ### 테스트
 
 ```bash
@@ -243,12 +260,18 @@ cd frontend
 npm test
 ```
 
+```bash
+cd quant-worker
+python3 -m unittest discover -s tests -v
+```
+
 ## 공개 문서
 
 - [아키텍처](docs/architecture.md)
 - [런타임 흐름](docs/runtime-lifecycle.md)
 - [핵심 ERD](docs/erd.md)
 - [현재 제품 범위](docs/mvp.md)
+- [quant-worker 계약](docs/quant-worker-contract.md)
 
 ## 현재 미구현 범위
 
