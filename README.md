@@ -165,7 +165,7 @@ qerp3/
 ├─ backend/        Spring Boot API, 도메인 로직, JDBC 영속성, Flyway 마이그레이션
 ├─ frontend/       Next.js App Router 대시보드와 백엔드 프록시
 ├─ quant-worker/   향후 자동화를 위한 Python 워커 경계
-├─ infra/          인프라 플레이스홀더 및 배포 관련 자산
+├─ infra/          Docker Compose 운영 기준선과 배포 관련 문서
 ├─ docs/           공개용 아키텍처, 런타임, 도메인 문서
 └─ README.md
 ```
@@ -188,12 +188,27 @@ qerp3/
 
 ## 로컬 실행 및 테스트
 
-### 준비 사항
+### Docker Compose로 한번에 실행
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+- 프론트엔드: `http://localhost:3000`
+- 백엔드 API: `http://localhost:8080`
+- PostgreSQL: `localhost:5432`
+- 종료: `docker compose down`
+- 데이터까지 초기화: `docker compose down -v`
+
+포트와 DB 자격 증명은 루트 `.env`에서 조정할 수 있습니다. 자세한 사용법은 [infra/README.md](infra/README.md)를 참고하세요.
+
+### 수동 실행 준비 사항
 - Java 21
 - PostgreSQL
 - Node.js 20+
 
-### 백엔드 실행
+### 백엔드 수동 실행
 
 ```bash
 cd backend
@@ -205,7 +220,7 @@ export QERP_DB_PASSWORD=***
 
 애플리케이션 시작 시 Flyway가 현재 스키마를 생성합니다.
 
-### 프론트엔드 실행
+### 프론트엔드 수동 실행
 
 ```bash
 cd frontend

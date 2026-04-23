@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${QERP_POSTGRES_DB:-qerp}
+      POSTGRES_USER: ${QERP_POSTGRES_USER:-qerp}
+      POSTGRES_PASSWORD: ${QERP_POSTGRES_PASSWORD:-qerp}
+    ports:
+      - "${QERP_POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${QERP_POSTGRES_USER:-qerp} -d ${QERP_POSTGRES_DB:-qerp}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      QERP_DB_URL: jdbc:postgresql://postgres:5432/${QERP_POSTGRES_DB:-qerp}
+      QERP_DB_USERNAME: ${QERP_POSTGRES_USER:-qerp}
+      QERP_DB_PASSWORD: ${QERP_POSTGRES_PASSWORD:-qerp}
+      SERVER_PORT: 8080
+    ports:
+      - "${QERP_BACKEND_PORT:-8080}:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${QERP_FRONTEND_API_BASE_URL:-http://backend:8080}
+      PORT: 3000
+    ports:
+      - "${QERP_FRONTEND_PORT:-3000}:3000"
+
+volumes:
+  postgres-data:
