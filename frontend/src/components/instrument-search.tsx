@@ -1,7 +1,9 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import Link from 'next/link';
+import React, { FormEvent, useState } from 'react';
 
+import { getInstrumentDetailHref } from '@/lib/instrument-detail-route';
 import type { InstrumentSearchItem } from '@/types/api';
 
 interface Props {
@@ -78,9 +80,10 @@ export function InstrumentSearch({
         <ul className="search-results">
           {results.map((instrument) => {
             const isSelected = instrument.symbol === selectedSymbol;
+            const detailHref = getInstrumentDetailHref(instrument.symbol);
 
             return (
-              <li key={instrument.symbol}>
+              <li key={instrument.symbol} className="search-result-card">
                 <button
                   className={`search-result-button${isSelected ? ' is-selected' : ''}`}
                   type="button"
@@ -97,6 +100,14 @@ export function InstrumentSearch({
                     {isSelected ? <span>Selected</span> : null}
                   </div>
                 </button>
+
+                {detailHref ? (
+                  <div className="search-result-actions">
+                    <Link className="toolbar-link search-result-link" href={detailHref}>
+                      Open detail
+                    </Link>
+                  </div>
+                ) : null}
               </li>
             );
           })}

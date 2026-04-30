@@ -39,6 +39,16 @@ button {
   margin-bottom: 24px;
 }
 
+.page-breadcrumb {
+  margin-bottom: 10px;
+}
+
+.page-breadcrumb a {
+  color: #1d4ed8;
+  text-decoration: none;
+  font-weight: 600;
+}
+
 .page-header h1 {
   margin: 0 0 8px;
   font-size: 2rem;
@@ -74,6 +84,14 @@ button {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 16px;
+}
+
+.panel-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 .panel-header h2 {
@@ -309,6 +327,18 @@ th {
   background: #fff;
 }
 
+.toolbar-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #cad5e6;
+  border-radius: 10px;
+  padding: 10px 14px;
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+}
+
 .toolbar-button:disabled {
   cursor: wait;
   opacity: 0.7;
@@ -355,6 +385,11 @@ th {
   gap: 10px;
 }
 
+.search-result-card {
+  display: grid;
+  gap: 8px;
+}
+
 .search-result-button {
   width: 100%;
   border: 1px solid #d7e0ef;
@@ -391,6 +426,22 @@ th {
 .search-result-name {
   margin-bottom: 8px;
   color: #243047;
+}
+
+.search-result-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.search-result-link {
+  padding: 8px 12px;
+  font-size: 0.9rem;
+}
+
+.symbol-link {
+  color: #1d4ed8;
+  font-weight: 600;
+  text-decoration: none;
 }
 
 .quote-layout {
@@ -507,6 +558,45 @@ th {
   background: #fef2f2;
 }
 
+.instrument-detail-overview {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.instrument-detail-overview-main h2 {
+  margin: 8px 0 8px;
+  font-size: 1.8rem;
+}
+
+.instrument-detail-overview-main p {
+  margin: 0;
+  color: #56627a;
+}
+
+.instrument-detail-overview-side {
+  display: grid;
+  justify-items: end;
+  gap: 12px;
+}
+
+.instrument-detail-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.instrument-detail-eyebrow {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #617089;
+}
+
 .market-chart-layout {
   display: grid;
   gap: 16px;
@@ -607,6 +697,23 @@ th {
 @media (max-width: 640px) {
   .instrument-search-form {
     grid-template-columns: 1fr;
+  }
+
+  .instrument-detail-overview,
+  .instrument-detail-overview-side,
+  .panel-header-actions {
+    align-items: flex-start;
+    justify-items: start;
+  }
+
+  .instrument-detail-overview {
+    flex-direction: column;
+  }
+
+  .instrument-detail-overview-side,
+  .instrument-detail-badges,
+  .panel-header-actions {
+    justify-content: flex-start;
   }
 
   .quote-hero,

@@ -5,6 +5,7 @@ interface Props {
   signal: QuantSignal | null;
   loading: boolean;
   error: string | null;
+  enabled: boolean;
   onRefresh: () => void;
 }
 
@@ -39,7 +40,7 @@ function getSignalClassName(signal: QuantSignal['signal']) {
   return 'signal-pill-hold';
 }
 
-export function QuantSignalPanel({ selectedInstrument, signal, loading, error, onRefresh }: Props) {
+export function QuantSignalPanel({ selectedInstrument, signal, loading, error, enabled, onRefresh }: Props) {
   const symbol = selectedInstrument?.symbol ?? signal?.symbol ?? null;
   const currency = selectedInstrument?.currency ?? 'USD';
 
@@ -54,23 +55,25 @@ export function QuantSignalPanel({ selectedInstrument, signal, loading, error, o
               : 'Enable quant mode and select a symbol to load a backend quant signal.'}
           </p>
         </div>
-        <button className="toolbar-button" type="button" onClick={onRefresh} disabled={!symbol || loading}>
+        <button className="toolbar-button" type="button" onClick={onRefresh} disabled={!symbol || !enabled || loading}>
           {loading ? 'Loading…' : 'Refresh signal'}
         </button>
       </div>
 
       {!symbol ? <div className="empty-state">Select a symbol to load a backend quant signal.</div> : null}
 
-      {symbol && loading ? <div className="status-note">Loading backend quant signal for {symbol}…</div> : null}
+      {symbol && !enabled ? <div className="empty-state">Enable quant mode to load a backend quant signal for {symbol}.</div> : null}
 
-      {symbol && error ? (
+      {symbol && enabled && loading ? <div className="status-note">Loading backend quant signal for {symbol}…</div> : null}
+
+      {symbol && enabled && error ? (
         <div className="error-state">
           <strong>Quant signal unavailable</strong>
           <div>{error}</div>
         </div>
       ) : null}
 
-      {signal ? (
+      {enabled && signal ? (
         <div className="quant-signal-layout">
           <div className="quant-signal-hero">
             <div>

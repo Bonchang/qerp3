@@ -5,6 +5,7 @@ import {
   DEFAULT_API_BASE_URL,
   FRONTEND_PROXY_PREFIX,
   fetchCandles,
+  fetchInstrument,
   fetchQuantSignal,
   fetchQuote,
   getApiBaseUrl,
@@ -183,6 +184,42 @@ test('searchInstruments uses the frontend proxy path with encoded query params',
 
 test('searchInstruments rejects blank queries before making a request', async () => {
   await assert.rejects(() => searchInstruments('   '), /Search query is required\./);
+});
+
+test('fetchInstrument uppercases the symbol and uses the instrument detail proxy path', async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
+
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    calls.push({ input, init });
+    return new Response(
+      JSON.stringify({
+        symbol: 'AAPL',
+        name: 'Apple Inc.',
+        exchange: 'NASDAQ',
+        assetType: 'EQUITY',
+        currency: 'USD',
+      }),
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+  }) as typeof fetch;
+
+  try {
+    const response = await fetchInstrument(' aapl ');
+
+    assert.equal(response.symbol, 'AAPL');
+    assert.equal(response.name, 'Apple Inc.');
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]?.input, `${FRONTEND_PROXY_PREFIX}/instruments/AAPL`);
+    assert.equal(calls[0]?.init?.cache, 'no-store');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test('fetchQuote uppercases the symbol and uses the quote proxy path', async () => {

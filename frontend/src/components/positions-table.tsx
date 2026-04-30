@@ -1,3 +1,7 @@
+import Link from 'next/link';
+import React from 'react';
+
+import { getInstrumentDetailHref } from '@/lib/instrument-detail-route';
 import type { PositionItem } from '@/types/api';
 
 interface Props {
@@ -35,17 +39,29 @@ export function PositionsTable({ positions, asOf, formatCurrency, formatNumber, 
               </tr>
             </thead>
             <tbody>
-              {positions.map((position) => (
-                <tr key={position.symbol}>
-                  <td>{position.symbol}</td>
-                  <td>{formatNumber(position.quantity)}</td>
-                  <td>{formatCurrency(position.avgPrice)}</td>
-                  <td>{formatCurrency(position.currentPrice)}</td>
-                  <td>{formatCurrency(position.marketValue)}</td>
-                  <td>{formatCurrency(position.unrealizedPnl)}</td>
-                  <td>{formatPercent(position.unrealizedPnlRate)}</td>
-                </tr>
-              ))}
+              {positions.map((position) => {
+                const detailHref = getInstrumentDetailHref(position.symbol);
+
+                return (
+                  <tr key={position.symbol}>
+                    <td>
+                      {detailHref ? (
+                        <Link className="symbol-link" href={detailHref}>
+                          {position.symbol}
+                        </Link>
+                      ) : (
+                        position.symbol
+                      )}
+                    </td>
+                    <td>{formatNumber(position.quantity)}</td>
+                    <td>{formatCurrency(position.avgPrice)}</td>
+                    <td>{formatCurrency(position.currentPrice)}</td>
+                    <td>{formatCurrency(position.marketValue)}</td>
+                    <td>{formatCurrency(position.unrealizedPnl)}</td>
+                    <td>{formatPercent(position.unrealizedPnlRate)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

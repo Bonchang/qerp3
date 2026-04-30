@@ -21,6 +21,26 @@ class InstrumentControllerTest {
     private MockMvc mockMvc;
 
     @Test
+    void loadsInstrumentDetailsBySymbol() throws Exception {
+        mockMvc.perform(get("/api/v1/instruments/aapl"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.symbol").value("AAPL"))
+                .andExpect(jsonPath("$.name").value("Apple Inc."))
+                .andExpect(jsonPath("$.exchange").value("NASDAQ"))
+                .andExpect(jsonPath("$.assetType").value("EQUITY"))
+                .andExpect(jsonPath("$.currency").value("USD"));
+    }
+
+    @Test
+    void returnsNotFoundWhenInstrumentDetailsAreMissing() throws Exception {
+        mockMvc.perform(get("/api/v1/instruments/unknown"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error.code").value("INSTRUMENT_NOT_FOUND"))
+                .andExpect(jsonPath("$.error.message").value("instrument not found"))
+                .andExpect(jsonPath("$.path").value("/api/v1/instruments/unknown"));
+    }
+
+    @Test
     void searchesInstrumentsBySymbolOrNameCaseInsensitively() throws Exception {
         mockMvc.perform(get("/api/v1/instruments/search")
                         .param("q", "meta"))

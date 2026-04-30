@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --import tsx --test src/lib/api.test.ts"
+    "test": "node --import tsx --test src/lib/api.test.ts src/components/instrument-navigation.test.tsx"
   },
   "dependencies": {
     "next": "15.5.15",

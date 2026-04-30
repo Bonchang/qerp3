@@ -21,6 +21,7 @@ import {
   searchInstruments,
 } from '@/lib/api';
 import { createSymbolRequestGuard } from '@/lib/request-guard';
+import { getInstrumentDetailHref } from '@/lib/instrument-detail-route';
 import type {
   InstrumentSearchItem,
   MarketCandleSeries,
@@ -415,6 +416,7 @@ export default function HomePage() {
             loading={quoteLoading}
             error={quoteError}
             onRefreshQuote={handleRefreshQuote}
+            detailHref={getInstrumentDetailHref(selectedInstrument?.symbol)}
           />
 
           {quantModeEnabled ? (
@@ -423,6 +425,7 @@ export default function HomePage() {
               signal={quantSignal}
               loading={quantLoading}
               error={quantError}
+              enabled={quantModeEnabled}
               onRefresh={handleRefreshQuantSignal}
             />
           ) : null}

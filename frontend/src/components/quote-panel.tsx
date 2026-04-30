@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import type { InstrumentSearchItem, MarketQuote } from '@/types/api';
 
 interface Props {
@@ -6,6 +8,7 @@ interface Props {
   loading: boolean;
   error: string | null;
   onRefreshQuote: () => void;
+  detailHref?: string | null;
 }
 
 function formatCurrency(value: number, currency: string) {
@@ -24,7 +27,7 @@ function formatPercent(value: number) {
   }).format(value)}%`;
 }
 
-export function QuotePanel({ selectedInstrument, quote, loading, error, onRefreshQuote }: Props) {
+export function QuotePanel({ selectedInstrument, quote, loading, error, onRefreshQuote, detailHref }: Props) {
   const symbol = selectedInstrument?.symbol ?? quote?.symbol ?? null;
   const changeClassName = quote
     ? quote.change > 0
@@ -45,9 +48,16 @@ export function QuotePanel({ selectedInstrument, quote, loading, error, onRefres
               : 'Select a search result to load a quote snapshot.'}
           </p>
         </div>
-        <button className="toolbar-button" type="button" onClick={onRefreshQuote} disabled={!symbol || loading}>
-          {loading ? 'Loading…' : 'Refresh quote'}
-        </button>
+        <div className="panel-header-actions">
+          {detailHref ? (
+            <Link className="toolbar-link" href={detailHref}>
+              Open detail
+            </Link>
+          ) : null}
+          <button className="toolbar-button" type="button" onClick={onRefreshQuote} disabled={!symbol || loading}>
+            {loading ? 'Loading…' : 'Refresh quote'}
+          </button>
+        </div>
       </div>
 
       {!symbol ? <div className="empty-state">Search and select a symbol to view quote details.</div> : null}

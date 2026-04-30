@@ -1,6 +1,7 @@
 import {
   ApiErrorResponse,
   CreateOrderInput,
+  InstrumentSearchItem,
   InstrumentSearchResponse,
   MarketCandleSeries,
   MarketQuote,
@@ -101,6 +102,16 @@ export async function searchInstruments(query: string, limit = 10): Promise<Inst
   });
 
   return request<InstrumentSearchResponse>(`/instruments/search?${params.toString()}`);
+}
+
+export async function fetchInstrument(symbol: string): Promise<InstrumentSearchItem> {
+  const normalizedSymbol = symbol.trim().toUpperCase();
+
+  if (!normalizedSymbol) {
+    throw new Error('Symbol is required.');
+  }
+
+  return request<InstrumentSearchItem>(`/instruments/${encodeURIComponent(normalizedSymbol)}`);
 }
 
 export async function fetchQuote(symbol: string): Promise<MarketQuote> {

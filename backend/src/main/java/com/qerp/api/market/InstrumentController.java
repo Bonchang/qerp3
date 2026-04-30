@@ -6,6 +6,7 @@ import com.qerp.application.market.MarketDataService;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,6 +23,14 @@ public class InstrumentController {
 
     public InstrumentController(MarketDataService marketDataService) {
         this.marketDataService = marketDataService;
+    }
+
+    @GetMapping("/{symbol}")
+    public InstrumentDetailsResponse getInstrument(@PathVariable String symbol) {
+        Instrument instrument = marketDataService.getInstrument(symbol)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "INSTRUMENT_NOT_FOUND", "instrument not found"));
+
+        return toDetails(instrument);
     }
 
     @GetMapping("/search")
@@ -41,6 +50,16 @@ public class InstrumentController {
 
     private InstrumentSearchResponse.InstrumentItem toItem(Instrument instrument) {
         return new InstrumentSearchResponse.InstrumentItem(
+                instrument.symbol(),
+                instrument.name(),
+                instrument.exchange(),
+                instrument.assetType(),
+                instrument.currency()
+        );
+    }
+
+    private InstrumentDetailsResponse toDetails(Instrument instrument) {
+        return new InstrumentDetailsResponse(
                 instrument.symbol(),
                 instrument.name(),
                 instrument.exchange(),

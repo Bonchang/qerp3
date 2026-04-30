@@ -4,7 +4,7 @@
 
 이 문서는 현재 QERP가 공개적으로 제공하는 백엔드 API 계약을 정리합니다.
 
-- 포함 범위: 주문 생성/조회/취소, 포트폴리오 조회, 종목 검색, 시세/캔들 조회, quant signal 조회
+- 포함 범위: 주문 생성/조회/취소, 포트폴리오 조회, 종목 검색, 단일 종목 메타데이터 조회, 시세/캔들 조회, quant signal 조회
 - 제외 범위: 인증 상세 구현, 실제 브로커 연동, 고급 리스크 엔진, 자동 체결 재평가 워커
 - 전제: 모든 주문은 **페이퍼 트레이딩 시뮬레이션**이며, 시장 데이터는 **결정적 규칙**으로 제공됩니다.
 
@@ -20,9 +20,10 @@
 5. `GET /api/v1/portfolio`
 6. `GET /api/v1/portfolio/positions`
 7. `GET /api/v1/instruments/search`
-8. `GET /api/v1/market/quotes/{symbol}`
-9. `GET /api/v1/market/candles/{symbol}`
-10. `GET /api/v1/quant/signals/{symbol}`
+8. `GET /api/v1/instruments/{symbol}`
+9. `GET /api/v1/market/quotes/{symbol}`
+10. `GET /api/v1/market/candles/{symbol}`
+11. `GET /api/v1/quant/signals/{symbol}`
 
 ### 공통 가정
 - 인증: 현재 미구현입니다.
@@ -59,6 +60,7 @@
 ### 주요 오류 코드
 - `VALIDATION_ERROR` (`400`)
 - `NOT_FOUND` (`404`)
+- `INSTRUMENT_NOT_FOUND` (`404`)
 - `ORDER_NOT_CANCELLABLE` (`409`)
 - `INSUFFICIENT_CASH` (`409`)
 - `INSUFFICIENT_POSITION_QUANTITY` (`409`)
@@ -341,6 +343,9 @@
 #### 설명
 내장된 미국 주식 카탈로그에서 심볼 또는 회사명으로 종목을 검색합니다.
 
+#### 프론트엔드 사용 메모
+- 대시보드 검색 결과는 여기서 받은 심볼을 기준으로 `/instruments/[symbol]` 상세 딥링크를 구성할 수 있습니다.
+
 #### 쿼리 파라미터
 - `q` (required): 심볼 또는 회사명 검색어, 대소문자 비구분
 - `limit` (optional, default `10`, max `20`)
@@ -365,7 +370,30 @@
 
 ---
 
-### 6.8 `GET /api/v1/market/quotes/{symbol}`
+### 6.8 `GET /api/v1/instruments/{symbol}`
+#### 설명
+지원 심볼 하나의 기준 메타데이터를 반환합니다. 프론트엔드 selected-symbol 상세 화면은 이 응답을 기준으로 같은 심볼의 quote/chart/order/quant 패널을 동기화합니다.
+
+#### 경로 파라미터
+- `symbol` (required): 조회할 심볼. 대소문자 입력은 허용되며 서버가 대문자 기준으로 해석합니다.
+
+#### 응답 JSON (`200`)
+```json
+{
+  "symbol": "AAPL",
+  "name": "Apple Inc.",
+  "exchange": "NASDAQ",
+  "assetType": "EQUITY",
+  "currency": "USD"
+}
+```
+
+#### 오류 사례
+- `404 INSTRUMENT_NOT_FOUND`
+
+---
+
+### 6.9 `GET /api/v1/market/quotes/{symbol}`
 #### 설명
 지원 심볼의 결정적 현재가 스냅샷을 반환합니다.
 
@@ -386,7 +414,7 @@
 
 ---
 
-### 6.9 `GET /api/v1/market/candles/{symbol}`
+### 6.10 `GET /api/v1/market/candles/{symbol}`
 #### 설명
 지원 심볼의 결정적 일봉(`1D`) 캔들 시계열을 반환합니다.
 
@@ -418,7 +446,7 @@
 
 ---
 
-### 6.10 `GET /api/v1/quant/signals/{symbol}`
+### 6.11 `GET /api/v1/quant/signals/{symbol}`
 #### 설명
 지원 심볼의 최신 시세 스냅샷을 불러온 뒤, 백엔드가 `quant-worker` 플레이스홀더 CLI를 동기 호출해 현재 quant signal JSON을 반환합니다.
 

@@ -9,6 +9,8 @@ public interface MarketDataService {
 
     List<Instrument> searchInstruments(String query, int limit);
 
+    Optional<Instrument> getInstrument(String symbol);
+
     Optional<MarketQuote> getQuote(String symbol);
 
     Optional<MarketCandleSeries> getCandles(String symbol, String interval, int limit);

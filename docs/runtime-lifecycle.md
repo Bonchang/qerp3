@@ -58,20 +58,23 @@ sequenceDiagram
     Market-->>Backend: 일치 종목 반환
     Backend-->>Frontend: 검색 결과 반환
 
-    User->>Frontend: 종목 선택
+    User->>Frontend: 종목 선택 또는 심볼 딥링크 열기
+    Frontend->>Proxy: GET /instruments/{symbol}
     Frontend->>Proxy: GET /market/quotes/{symbol}
     Frontend->>Proxy: GET /market/candles/{symbol}?interval=1D&limit=30
     Proxy->>Backend: 요청 전달
-    Backend->>Market: 시세와 캔들 조회
+    Backend->>Market: 종목 메타데이터, 시세, 캔들 조회
     Market-->>Backend: 결정적 시장 데이터 반환
-    Backend-->>Frontend: 시세 + 캔들 반환
-    Frontend-->>User: 시세 패널과 차트 패널 렌더링
+    Backend-->>Frontend: 종목 메타데이터 + 시세 + 캔들 반환
+    Frontend-->>User: 같은 심볼 기준의 상세 워크스페이스 렌더링
 ```
 
 ### 클라이언트가 알아야 할 요청 규칙
 
 현재 공개 API를 평가하거나 연동할 때 유용한 제약은 다음과 같습니다.
 - 종목 검색은 비어 있지 않은 `q` 파라미터가 필요하며 `limit`은 `1`부터 `20`까지 허용됩니다.
+- 선택 심볼 상세 화면은 `GET /api/v1/instruments/{symbol}` 메타데이터 조회가 먼저 성공해야 안정적으로 렌더링됩니다.
+- 검색 결과의 `Open detail`, 포지션 심볼, 최근 주문 심볼은 모두 같은 `/instruments/[symbol]` 딥링크를 사용합니다.
 - 시세 및 캔들 엔드포인트는 지원하지 않는 심볼에 대해 `404 NOT_FOUND`를 반환합니다.
 - 캔들 조회는 현재 `1D` 간격만 지원하며 `limit`은 `1`부터 `60`까지 허용됩니다.
 

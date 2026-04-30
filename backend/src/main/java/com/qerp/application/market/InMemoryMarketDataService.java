@@ -57,6 +57,14 @@ public class InMemoryMarketDataService implements MarketDataService {
     }
 
     @Override
+    public Optional<Instrument> getInstrument(String symbol) {
+        String normalizedSymbol = normalizeSymbol(symbol);
+        return instruments.stream()
+                .filter(instrument -> instrument.symbol().equals(normalizedSymbol))
+                .findFirst();
+    }
+
+    @Override
     public Optional<MarketQuote> getQuote(String symbol) {
         return Optional.ofNullable(quotesBySymbol.get(normalizeSymbol(symbol)));
     }

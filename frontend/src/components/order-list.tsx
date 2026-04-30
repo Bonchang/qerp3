@@ -1,3 +1,7 @@
+import Link from 'next/link';
+import React from 'react';
+
+import { getInstrumentDetailHref } from '@/lib/instrument-detail-route';
 import type { Order } from '@/types/api';
 
 interface Props {
@@ -34,20 +38,32 @@ export function OrderList({ orders, formatCurrency, formatNumber }: Props) {
               </tr>
             </thead>
             <tbody>
-              {orders.map((order) => (
-                <tr key={order.orderId}>
-                  <td>{new Date(order.createdAt).toLocaleString()}</td>
-                  <td>{order.symbol}</td>
-                  <td>
-                    <span className={`pill pill-${order.side.toLowerCase()}`}>{order.side}</span>
-                  </td>
-                  <td>{order.orderType}</td>
-                  <td>{formatNumber(order.quantity)}</td>
-                  <td>{order.status}</td>
-                  <td>{order.limitPrice == null ? '—' : formatCurrency(order.limitPrice)}</td>
-                  <td>{order.avgFillPrice == null ? '—' : formatCurrency(order.avgFillPrice)}</td>
-                </tr>
-              ))}
+              {orders.map((order) => {
+                const detailHref = getInstrumentDetailHref(order.symbol);
+
+                return (
+                  <tr key={order.orderId}>
+                    <td>{new Date(order.createdAt).toLocaleString()}</td>
+                    <td>
+                      {detailHref ? (
+                        <Link className="symbol-link" href={detailHref}>
+                          {order.symbol}
+                        </Link>
+                      ) : (
+                        order.symbol
+                      )}
+                    </td>
+                    <td>
+                      <span className={`pill pill-${order.side.toLowerCase()}`}>{order.side}</span>
+                    </td>
+                    <td>{order.orderType}</td>
+                    <td>{formatNumber(order.quantity)}</td>
+                    <td>{order.status}</td>
+                    <td>{order.limitPrice == null ? '—' : formatCurrency(order.limitPrice)}</td>
+                    <td>{order.avgFillPrice == null ? '—' : formatCurrency(order.avgFillPrice)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
