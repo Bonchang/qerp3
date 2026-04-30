@@ -240,7 +240,7 @@ npm install
 npm run dev
 ```
 
-기본 설정에서 프론트엔드는 `http://localhost:8080` 백엔드를 대상으로 하며, 브라우저 요청은 `/api/backend/...`를 통해 전달합니다. Quant 모드도 동일한 프록시 경로를 통해 `GET /api/v1/quant/signals/{symbol}` 백엔드 API를 사용합니다.
+기본 설정에서 프론트엔드는 로컬 개발에서는 `http://localhost:8080` 백엔드를 대상으로 하고, Vercel 배포에서는 `NEXT_PUBLIC_API_BASE_URL` 이 비어 있으면 `https://qerp3-backend.onrender.com` 으로 자동 폴백합니다. 브라우저 요청은 `/api/backend/...`를 통해 전달하며, Quant 모드도 동일한 프록시 경로를 통해 `GET /api/v1/quant/signals/{symbol}` 백엔드 API를 사용합니다.
 
 백엔드 quant signal API는 기본적으로 저장소 루트의 `quant-worker/`를 탐색해 `python3 -m app.main`을 실행합니다. 필요하면 아래 환경 변수로 로컬 경로를 덮어쓸 수 있습니다.
 
@@ -291,7 +291,7 @@ python3 -m unittest discover -s tests -v
 
 빠른 요약:
 - Vercel 프로젝트 **Root Directory**: `frontend`
-- Vercel 환경 변수: `NEXT_PUBLIC_API_BASE_URL=https://<your-render-service>.onrender.com`
+- Vercel 환경 변수: 선택 사항 (`NEXT_PUBLIC_API_BASE_URL` 미설정 시 `https://qerp3-backend.onrender.com` 자동 사용)
 - Render 빌드 명령: `./gradlew bootJar`
 - Render 시작 명령: `java -jar build/libs/*.jar`
 - Render 헬스 체크 경로: `/health`

@@ -12,11 +12,27 @@ import {
 } from '@/types/api';
 
 export const DEFAULT_API_BASE_URL = 'http://localhost:8080';
+export const VERCEL_FALLBACK_API_BASE_URL = 'https://qerp3-backend.onrender.com';
 export const FRONTEND_PROXY_PREFIX = '/api/backend';
 
-export function getApiBaseUrl(value = process.env.NEXT_PUBLIC_API_BASE_URL): string {
+export function isVercelDeployment(
+  vercel = process.env.VERCEL,
+  vercelEnv = process.env.VERCEL_ENV,
+): boolean {
+  return vercel === '1' || Boolean(vercelEnv?.trim());
+}
+
+export function getApiBaseUrl(
+  value = process.env.NEXT_PUBLIC_API_BASE_URL,
+  vercelDeployment = isVercelDeployment(),
+): string {
   const raw = value?.trim();
-  return raw && raw.length > 0 ? raw.replace(/\/$/, '') : DEFAULT_API_BASE_URL;
+
+  if (raw && raw.length > 0) {
+    return raw.replace(/\/$/, '');
+  }
+
+  return vercelDeployment ? VERCEL_FALLBACK_API_BASE_URL : DEFAULT_API_BASE_URL;
 }
 
 export function getApiErrorMessage(payload: unknown, fallback = 'Request failed'): string {

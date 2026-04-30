@@ -451,7 +451,7 @@ export default function HomePage() {
             <div className="panel-header">
               <div>
                 <h2>Connection</h2>
-                <p>Backend base URL defaults to http://localhost:8080.</p>
+                <p>Backend base URL defaults to localhost in local dev and the live Render backend on Vercel.</p>
               </div>
               <button className="toolbar-button" type="button" onClick={() => void loadDashboard(false)} disabled={loading || refreshing}>
                 {refreshing ? 'Refreshing…' : 'Refresh'}

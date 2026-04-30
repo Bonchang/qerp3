@@ -4,12 +4,14 @@ import test from 'node:test';
 import {
   DEFAULT_API_BASE_URL,
   FRONTEND_PROXY_PREFIX,
+  VERCEL_FALLBACK_API_BASE_URL,
   fetchCandles,
   fetchInstrument,
   fetchQuantSignal,
   fetchQuote,
   getApiBaseUrl,
   getApiErrorMessage,
+  isVercelDeployment,
   searchInstruments,
   toOrderRequestBody,
 } from './api';
@@ -17,9 +19,21 @@ import { buildChartGeometry, formatSignedPercent, formatUtcSessionDate, summariz
 import { buildOrderFormQuantRecommendation } from './order-form-quant';
 import { createSymbolRequestGuard } from './request-guard';
 
-test('getApiBaseUrl falls back to localhost when env is missing', () => {
-  assert.equal(getApiBaseUrl(undefined), DEFAULT_API_BASE_URL);
-  assert.equal(getApiBaseUrl('   '), DEFAULT_API_BASE_URL);
+test('getApiBaseUrl falls back to localhost when env is missing outside Vercel', () => {
+  assert.equal(getApiBaseUrl(undefined, false), DEFAULT_API_BASE_URL);
+  assert.equal(getApiBaseUrl('   ', false), DEFAULT_API_BASE_URL);
+});
+
+test('getApiBaseUrl falls back to the live Render backend on Vercel when env is missing', () => {
+  assert.equal(getApiBaseUrl(undefined, true), VERCEL_FALLBACK_API_BASE_URL);
+  assert.equal(getApiBaseUrl('   ', true), VERCEL_FALLBACK_API_BASE_URL);
+});
+
+test('isVercelDeployment detects Vercel runtime markers', () => {
+  assert.equal(isVercelDeployment('1', undefined), true);
+  assert.equal(isVercelDeployment(undefined, 'preview'), true);
+  assert.equal(isVercelDeployment(undefined, undefined), false);
+  assert.equal(isVercelDeployment('0', '   '), false);
 });
 
 test('getApiBaseUrl trims trailing slash', () => {
