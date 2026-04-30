@@ -229,7 +229,7 @@ export QERP_DB_PASSWORD=***
 ./gradlew bootRun
 ```
 
-애플리케이션 시작 시 Flyway가 현재 스키마를 생성합니다.
+애플리케이션 시작 시 Flyway가 기본 스키마 `qerp3` 를 생성/업데이트합니다. 필요하면 `QERP_DB_SCHEMA` 로 덮어쓸 수 있습니다.
 
 ### 프론트엔드 수동 실행
 
@@ -296,6 +296,7 @@ python3 -m unittest discover -s tests -v
 - Render 시작 명령: `java -jar build/libs/*.jar`
 - Render 헬스 체크 경로: `/health`
 - Render 백엔드 필수 환경 변수: `QERP_DB_URL`, `QERP_DB_USERNAME`, `QERP_DB_PASSWORD`
+- 선택 환경 변수: `QERP_DB_SCHEMA` (기본값 `qerp3`)
 
 전체 단계별 가이드는 [docs/deployment-vercel-render-neon.md](docs/deployment-vercel-render-neon.md)를 참고하세요.
 

@@ -9,8 +9,13 @@ spring:
     username: ${QERP_DB_USERNAME:qerp}
     password: ${QERP_DB_PASSWORD:qerp}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-init-sql: SET search_path TO ${QERP_DB_SCHEMA:qerp3}, public
   flyway:
     enabled: true
+    default-schema: ${QERP_DB_SCHEMA:qerp3}
+    schemas: ${QERP_DB_SCHEMA:qerp3}
+    create-schemas: true
   jdbc:
     template:
       query-timeout: 5

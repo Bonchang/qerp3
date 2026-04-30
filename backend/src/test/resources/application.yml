@@ -1,11 +1,16 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:${random.uuid};MODE=PostgreSQL;DATABASE_TO_UPPER=false
+    url: jdbc:h2:mem:${random.uuid};MODE=PostgreSQL;DATABASE_TO_UPPER=false;INIT=CREATE SCHEMA IF NOT EXISTS qerp3\;SET SCHEMA qerp3
     username: sa
     password:
     driver-class-name: org.h2.Driver
+    hikari:
+      connection-init-sql: SET SCHEMA ${QERP_DB_SCHEMA:qerp3}
   flyway:
     enabled: true
+    default-schema: ${QERP_DB_SCHEMA:qerp3}
+    schemas: ${QERP_DB_SCHEMA:qerp3}
+    create-schemas: true
   test:
     database:
       replace: none
