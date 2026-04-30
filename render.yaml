@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: qerp3-backend
+    runtime: java
+    plan: free
+    rootDir: backend
+    buildCommand: ./gradlew bootJar
+    startCommand: java -jar build/libs/*.jar
+    healthCheckPath: /health
+    envVars:
+      - key: QERP_DB_URL
+        sync: false
+      - key: QERP_DB_USERNAME
+        sync: false
+      - key: QERP_DB_PASSWORD
+        sync: false
+      - key: QERP3_QUANT_WORKER_DIR
+        value: ../quant-worker
+      - key: QERP3_QUANT_PYTHON_BIN
+        value: python3

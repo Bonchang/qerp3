@@ -2,6 +2,8 @@
 
 QERP v2의 로컬 운영 기준선은 루트 `docker-compose.yml`을 중심으로 구성합니다. 목표는 **프론트엔드 + 백엔드 + PostgreSQL**을 최소 재현 가능한 형태로 빠르게 올리고, 수동 개발 흐름을 깨지 않으면서 첫 배포 준비를 돕는 것입니다.
 
+무료 호스팅 배포 경로(Vercel + Render + Neon)는 [docs/deployment-vercel-render-neon.md](../docs/deployment-vercel-render-neon.md)에 정리되어 있습니다.
+
 ## 구성 요소
 
 - `postgres`: 주문/포트폴리오 상태를 저장하는 PostgreSQL 16

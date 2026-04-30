@@ -65,6 +65,7 @@ QERP는 우선 페이퍼 트레이딩 경험 자체를 깔끔하게 제공하는
 | `GET /api/v1/portfolio` | 페이퍼 포트폴리오의 핵심 요약 지표를 반환합니다. |
 | `GET /api/v1/portfolio/positions` | 현재 보유 중인 포지션 목록을 반환합니다. |
 | `POST /api/v1/orders` / `GET /api/v1/orders` / `GET /api/v1/orders/{orderId}` / `POST /api/v1/orders/{orderId}/cancel` | 페이퍼 주문 생성, 조회, 목록 확인, 취소를 제공합니다. |
+| `GET /health` | Render 등에서 사용할 수 있는 경량 백엔드 헬스 체크를 반환합니다. |
 
 ### 데모 시장 데이터 범위
 - 미국 주식 7개 심볼로 구성된 내장 데모 카탈로그
@@ -278,9 +279,30 @@ cd quant-worker
 python3 -m unittest discover -s tests -v
 ```
 
+## 무료 호스팅 배포 경로
+
+이 저장소의 가장 단순한 무료 배포 조합은 아래와 같습니다.
+
+- **Frontend:** Vercel (`frontend/`)
+- **Backend:** Render (`backend/`)
+- **Database:** Neon PostgreSQL
+
+현재 백엔드는 `/health` 엔드포인트와 `PORT` 환경 변수 기반 포트 바인딩을 지원하므로 Render 헬스 체크에 바로 사용할 수 있습니다.
+
+빠른 요약:
+- Vercel 프로젝트 **Root Directory**: `frontend`
+- Vercel 환경 변수: `NEXT_PUBLIC_API_BASE_URL=https://<your-render-service>.onrender.com`
+- Render 빌드 명령: `./gradlew bootJar`
+- Render 시작 명령: `java -jar build/libs/*.jar`
+- Render 헬스 체크 경로: `/health`
+- Render 백엔드 필수 환경 변수: `QERP_DB_URL`, `QERP_DB_USERNAME`, `QERP_DB_PASSWORD`
+
+전체 단계별 가이드는 [docs/deployment-vercel-render-neon.md](docs/deployment-vercel-render-neon.md)를 참고하세요.
+
 ## 공개 문서
 
 - [아키텍처](docs/architecture.md)
+- [Vercel + Render + Neon 배포](docs/deployment-vercel-render-neon.md)
 - [런타임 흐름](docs/runtime-lifecycle.md)
 - [핵심 ERD](docs/erd.md)
 - [현재 제품 범위](docs/mvp.md)
