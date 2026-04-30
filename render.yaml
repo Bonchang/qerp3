@@ -1,11 +1,11 @@
 services:
   - type: web
     name: qerp3-backend
-    runtime: java
+    runtime: docker
     plan: free
     rootDir: backend
-    buildCommand: ./gradlew bootJar
-    startCommand: java -jar build/libs/*.jar
+    dockerContext: .
+    dockerfilePath: ./Dockerfile
     healthCheckPath: /health
     envVars:
       - key: QERP_DB_URL

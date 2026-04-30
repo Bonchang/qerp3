@@ -57,8 +57,9 @@ QERP_DB_PASSWORD=<neon-password>
 Blueprint가 설정하는 핵심 값:
 
 - Root Directory: `backend`
-- Build Command: `./gradlew bootJar`
-- Start Command: `java -jar build/libs/*.jar`
+- Runtime: `Docker`
+- Docker Context: `.`
+- Dockerfile Path: `./Dockerfile`
 - Health Check Path: `/health`
 - Plan: `free`
 
@@ -66,10 +67,10 @@ Blueprint가 설정하는 핵심 값:
 
 Blueprint를 쓰지 않으면 Render Web Service를 직접 아래처럼 만듭니다.
 
-- Environment / Runtime: Java
+- Environment / Runtime: Docker
 - Root Directory: `backend`
-- Build Command: `./gradlew bootJar`
-- Start Command: `java -jar build/libs/*.jar`
+- Docker Context: `.`
+- Dockerfile Path: `./Dockerfile`
 - Health Check Path: `/health`
 
 ### Render 런타임 메모
@@ -149,4 +150,4 @@ https://<your-vercel-app>.vercel.app/api/backend/portfolio
 
 - **Vercel 설정은 문서로만 유지**: Vercel의 monorepo Root Directory는 대시보드 설정이 가장 명확해서 별도 `vercel.json` 은 추가하지 않았습니다.
 - **Neon 전용 설정 파일은 추가하지 않음**: 이 저장소에 필요한 것은 결국 PostgreSQL 접속 정보뿐이라 환경 변수 문서화만 유지했습니다.
-- **Render는 blueprint 추가**: monorepo에서 `backend/` 루트, 빌드/시작 명령, 헬스 체크 경로를 반복 입력하지 않도록 `render.yaml` 을 추가했습니다.
+- **Render는 blueprint 추가**: monorepo에서 `backend/` 루트, Docker context/Dockerfile, 헬스 체크 경로를 반복 입력하지 않도록 `render.yaml` 을 추가했습니다.
