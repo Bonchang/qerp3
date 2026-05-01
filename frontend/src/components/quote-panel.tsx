@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import type { LiveMarketActivity } from '@/lib/use-live-market-snapshot';
 import type { InstrumentSearchItem, MarketQuote } from '@/types/api';
 
 interface Props {
@@ -9,6 +10,7 @@ interface Props {
   error: string | null;
   onRefreshQuote: () => void;
   detailHref?: string | null;
+  activity?: LiveMarketActivity | null;
 }
 
 function formatCurrency(value: number, currency: string) {
@@ -27,7 +29,7 @@ function formatPercent(value: number) {
   }).format(value)}%`;
 }
 
-export function QuotePanel({ selectedInstrument, quote, loading, error, onRefreshQuote, detailHref }: Props) {
+export function QuotePanel({ selectedInstrument, quote, loading, error, onRefreshQuote, detailHref, activity }: Props) {
   const symbol = selectedInstrument?.symbol ?? quote?.symbol ?? null;
   const changeClassName = quote
     ? quote.change > 0
@@ -49,6 +51,7 @@ export function QuotePanel({ selectedInstrument, quote, loading, error, onRefres
           </p>
         </div>
         <div className="panel-header-actions">
+          {activity ? <span className={activity.badgeClassName}>{activity.badgeText}</span> : null}
           {detailHref ? (
             <Link className="toolbar-link" href={detailHref}>
               Open detail
@@ -70,6 +73,8 @@ export function QuotePanel({ selectedInstrument, quote, loading, error, onRefres
           <div>{error}</div>
         </div>
       ) : null}
+
+      {symbol && activity ? <div className="status-note status-note-subtle">{activity.detailText}</div> : null}
 
       {quote ? (
         <div className="quote-layout">
@@ -93,6 +98,12 @@ export function QuotePanel({ selectedInstrument, quote, loading, error, onRefres
               <span>As of</span>
               <strong>{new Date(quote.asOf).toLocaleString()}</strong>
             </div>
+            {activity?.lastUpdated ? (
+              <div className="summary-card">
+                <span>Last updated</span>
+                <strong>{new Date(activity.lastUpdated).toLocaleTimeString()}</strong>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

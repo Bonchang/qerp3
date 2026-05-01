@@ -8,9 +8,19 @@ interface Props {
   orders: Order[];
   formatCurrency: (value: number) => string;
   formatNumber: (value: number) => string;
+  loading?: boolean;
+  error?: string | null;
+  emptyMessage?: string;
 }
 
-export function OrderList({ orders, formatCurrency, formatNumber }: Props) {
+export function OrderList({
+  orders,
+  formatCurrency,
+  formatNumber,
+  loading = false,
+  error = null,
+  emptyMessage = 'No orders submitted yet.',
+}: Props) {
   return (
     <section className="panel">
       <div className="panel-header">
@@ -20,8 +30,19 @@ export function OrderList({ orders, formatCurrency, formatNumber }: Props) {
         </div>
       </div>
 
-      {orders.length === 0 ? (
-        <div className="empty-state">No orders submitted yet.</div>
+      {loading ? (
+        <div className="loading-table" aria-live="polite">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={`orders-loading-${index}`} className="loading-row" aria-hidden="true" />
+          ))}
+        </div>
+      ) : error ? (
+        <div className="error-state">
+          <strong>Orders unavailable</strong>
+          <div>{error}</div>
+        </div>
+      ) : orders.length === 0 ? (
+        <div className="empty-state">{emptyMessage}</div>
       ) : (
         <div className="table-wrap">
           <table>

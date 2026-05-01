@@ -2,6 +2,9 @@ package com.qerp.application.market;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -48,6 +51,30 @@ class InMemoryMarketDataServiceTest {
                 () -> service.getCandles("AAPL", "1H", 30));
 
         assertThat(exception).hasMessage("interval must be 1D");
+    }
+
+    @Test
+    void returnsLiveSnapshotWithIntradayCandlesThatMoveOverTime() {
+        InMemoryMarketDataService firstService = new InMemoryMarketDataService(
+                Clock.fixed(Instant.parse("2026-05-01T14:30:05Z"), ZoneOffset.UTC)
+        );
+        InMemoryMarketDataService secondService = new InMemoryMarketDataService(
+                Clock.fixed(Instant.parse("2026-05-01T14:30:11Z"), ZoneOffset.UTC)
+        );
+
+        LiveMarketSnapshot firstSnapshot = firstService.getLiveSnapshot("AAPL", 5).orElseThrow();
+        LiveMarketSnapshot secondSnapshot = secondService.getLiveSnapshot("AAPL", 5).orElseThrow();
+
+        assertThat(firstSnapshot.symbol()).isEqualTo("AAPL");
+        assertThat(firstSnapshot.live()).isTrue();
+        assertThat(firstSnapshot.quote().asOf()).hasToString("2026-05-01T14:30:05Z");
+        assertThat(firstSnapshot.candles().interval()).isEqualTo("1m");
+        assertThat(firstSnapshot.candles().items()).hasSize(5);
+        assertThat(firstSnapshot.candles().items().getLast().timestamp()).hasToString("2026-05-01T14:30:00Z");
+        assertThat(secondSnapshot.quote().asOf()).hasToString("2026-05-01T14:30:11Z");
+        assertThat(secondSnapshot.quote().price()).isNotEqualByComparingTo(firstSnapshot.quote().price());
+        assertThat(secondSnapshot.candles().items().getLast().close())
+                .isNotEqualByComparingTo(firstSnapshot.candles().items().getLast().close());
     }
 
     @Test

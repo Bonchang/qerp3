@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 
+import type { LiveMarketActivity } from '@/lib/use-live-market-snapshot';
 import type { InstrumentSearchItem, MarketCandle, MarketCandleSeries, MarketQuote } from '@/types/api';
 
 interface Props {
@@ -9,6 +10,7 @@ interface Props {
   loading: boolean;
   error: string | null;
   onRefresh: () => void;
+  activity?: LiveMarketActivity | null;
 }
 
 interface CandleSummary {
@@ -53,11 +55,19 @@ export function formatSignedPercent(value: number) {
   return `${prefix}${formatted}%`;
 }
 
-export function formatUtcSessionDate(timestamp: string) {
+export function formatUtcSessionDate(timestamp: string, interval = '1D') {
   const date = new Date(timestamp);
 
   if (Number.isNaN(date.getTime())) {
     return timestamp;
+  }
+
+  if (interval.toUpperCase() !== '1D') {
+    return date.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
   }
 
   return date.toISOString().slice(0, 10);
@@ -125,7 +135,7 @@ export function buildChartGeometry(items: MarketCandle[]): ChartGeometry {
   return { linePoints, areaPath, lastPoint };
 }
 
-export function MarketChartPanel({ selectedInstrument, candles, quote, loading, error, onRefresh }: Props) {
+export function MarketChartPanel({ selectedInstrument, candles, quote, loading, error, onRefresh, activity }: Props) {
   const symbol = selectedInstrument?.symbol ?? candles?.symbol ?? quote?.symbol ?? null;
   const currency = quote?.currency ?? selectedInstrument?.currency ?? 'USD';
   const summary = useMemo(() => summarizeCandles(candles?.items ?? []), [candles]);
@@ -157,14 +167,17 @@ export function MarketChartPanel({ selectedInstrument, candles, quote, loading, 
               : 'Select a search result to load recent candle history.'}
           </p>
         </div>
-        <button className="toolbar-button" type="button" onClick={onRefresh} disabled={!symbol || loading}>
-          {loading ? 'Loading…' : 'Refresh chart'}
-        </button>
+        <div className="panel-header-actions">
+          {activity ? <span className={activity.badgeClassName}>{activity.badgeText}</span> : null}
+          <button className="toolbar-button" type="button" onClick={onRefresh} disabled={!symbol || loading}>
+            {loading ? 'Loading…' : 'Refresh chart'}
+          </button>
+        </div>
       </div>
 
       {!symbol ? <div className="empty-state">Search and select a symbol to view recent price action.</div> : null}
 
-      {symbol && loading ? <div className="status-note">Loading 1D candles for {symbol}…</div> : null}
+      {symbol && loading ? <div className="status-note">Loading live candles for {symbol}…</div> : null}
 
       {symbol && error ? (
         <div className="error-state">
@@ -172,6 +185,8 @@ export function MarketChartPanel({ selectedInstrument, candles, quote, loading, 
           <div>{error}</div>
         </div>
       ) : null}
+
+      {symbol && activity ? <div className="status-note status-note-subtle">{activity.detailText}</div> : null}
 
       {candles && summary ? (
         <div className="market-chart-layout">
@@ -231,9 +246,9 @@ export function MarketChartPanel({ selectedInstrument, candles, quote, loading, 
               <span>Avg volume</span>
               <strong>{formatVolume(summary.averageVolume)}</strong>
             </div>
-            <div className="summary-card">
+              <div className="summary-card">
               <span>Last candle</span>
-              <strong>{formatUtcSessionDate(summary.latestTimestamp)}</strong>
+              <strong>{formatUtcSessionDate(summary.latestTimestamp, candles.interval)}</strong>
             </div>
             {quote ? (
               <div className="summary-card">

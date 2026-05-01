@@ -9,6 +9,7 @@ import { QuantSignalPanel } from '@/components/quant-signal-panel';
 import { QuotePanel } from '@/components/quote-panel';
 import { createOrder, fetchCandles, fetchInstrument, fetchQuantSignal, fetchQuote } from '@/lib/api';
 import { createSymbolRequestGuard } from '@/lib/request-guard';
+import { useLiveMarketSnapshot } from '@/lib/use-live-market-snapshot';
 import type { InstrumentSearchItem, MarketCandleSeries, MarketQuote, QuantSignal } from '@/types/api';
 
 interface Props {
@@ -36,6 +37,15 @@ export function InstrumentDetailWorkspace({ symbol }: Props) {
   const [quantError, setQuantError] = useState<string | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
+
+  const {
+    activity: liveMarketActivity,
+    candles: liveCandles,
+    error: liveMarketError,
+    loading: liveMarketLoading,
+    quote: liveQuote,
+    refresh: refreshLiveMarket,
+  } = useLiveMarketSnapshot(instrument?.symbol ?? normalizedSymbol);
 
   const instrumentRequestGuardRef = useRef(createSymbolRequestGuard());
   const quoteRequestGuardRef = useRef(createSymbolRequestGuard());
@@ -250,27 +260,19 @@ export function InstrumentDetailWorkspace({ symbol }: Props) {
       return;
     }
 
-    void loadSelectedInstrumentMarketData(instrument.symbol);
+    void refreshLiveMarket();
     if (quantModeEnabled) {
       void loadQuantSignal(instrument.symbol);
     }
-  }, [instrument, loadInstrument, loadQuantSignal, loadSelectedInstrumentMarketData, normalizedSymbol, quantModeEnabled]);
+  }, [instrument, loadInstrument, loadQuantSignal, normalizedSymbol, quantModeEnabled, refreshLiveMarket]);
 
   const handleRefreshQuote = useCallback(() => {
-    if (!instrument) {
-      return;
-    }
-
-    void loadQuote(instrument.symbol);
-  }, [instrument, loadQuote]);
+    void refreshLiveMarket();
+  }, [refreshLiveMarket]);
 
   const handleRefreshChart = useCallback(() => {
-    if (!instrument) {
-      return;
-    }
-
-    void loadCandles(instrument.symbol);
-  }, [instrument, loadCandles]);
+    void refreshLiveMarket();
+  }, [refreshLiveMarket]);
 
   const handleRefreshQuantSignal = useCallback(() => {
     if (!instrument || !quantModeEnabled) {
@@ -297,18 +299,65 @@ export function InstrumentDetailWorkspace({ symbol }: Props) {
     return `${instrument.exchange} · ${instrument.assetType} · ${instrument.currency}`;
   }, [instrument]);
 
+  const detailConnectionBadgeClassName = instrumentLoading
+    ? 'status-chip status-chip-pending'
+    : instrumentError
+      ? 'status-chip status-chip-error'
+      : instrument
+        ? 'status-chip status-chip-success'
+        : 'status-chip status-chip-muted';
+  const detailConnectionBadgeText = instrumentLoading
+    ? 'Loading symbol workspace'
+    : instrumentError
+      ? 'Backend attention needed'
+      : instrument
+        ? 'Symbol workspace ready'
+        : 'Awaiting symbol context';
+  const detailQuantBadgeClassName = quantModeEnabled
+    ? 'status-chip status-chip-accent'
+    : 'status-chip status-chip-muted';
+  const detailQuantBadgeText = quantModeEnabled ? 'Quant mode enabled' : 'Quant mode optional';
+
   return (
     <main className="page-shell">
-      <header className="page-header">
-        <div className="page-breadcrumb">
-          <Link href="/">← Back to dashboard</Link>
+      <header className="page-header page-header-hero">
+        <div className="page-header-topline">
+          <div className="page-breadcrumb">
+            <Link href="/">← Back to dashboard</Link>
+          </div>
+          <div className="page-header-badges">
+            <span className={detailConnectionBadgeClassName}>{detailConnectionBadgeText}</span>
+            <span className={detailQuantBadgeClassName}>{detailQuantBadgeText}</span>
+          </div>
         </div>
-        <h1>{instrument ? `${instrument.symbol} detail` : `${normalizedSymbol || 'Instrument'} detail`}</h1>
-        <p>
-          {instrument
-            ? `${instrument.name} · ${detailSummary}`
-            : 'Dedicated selected-symbol workspace for quote, chart, quant signal, and order flow.'}
-        </p>
+
+        <div className="page-header-main">
+          <div className="page-header-copy">
+            <span className="page-eyebrow">Selected symbol workspace</span>
+            <h1>{instrument ? `${instrument.symbol} detail` : `${normalizedSymbol || 'Instrument'} detail`}</h1>
+            <p>
+              {instrument
+                ? `${instrument.name} · ${detailSummary}`
+                : 'Dedicated selected-symbol workspace for quote, chart, quant signal, and order flow.'}
+            </p>
+          </div>
+
+          {instrument ? (
+            <div className="page-header-actions">
+              <button className="toolbar-button toolbar-button-primary" type="button" onClick={handleRefreshAll}>
+                Refresh symbol workspace
+              </button>
+            </div>
+          ) : null}
+        </div>
+
+        {instrument ? (
+          <div className="instrument-detail-summary-row">
+            <span className="chart-badge">{instrument.exchange}</span>
+            <span className="chart-badge">{instrument.assetType}</span>
+            <span className="chart-badge">{instrument.currency}</span>
+          </div>
+        ) : null}
       </header>
 
       {instrumentLoading ? (
@@ -352,19 +401,21 @@ export function InstrumentDetailWorkspace({ symbol }: Props) {
             <div className="stack">
               <QuotePanel
                 selectedInstrument={instrument}
-                quote={quote}
-                loading={quoteLoading}
-                error={quoteError}
+                quote={liveQuote}
+                loading={liveMarketLoading}
+                error={liveMarketError}
                 onRefreshQuote={handleRefreshQuote}
+                activity={liveMarketActivity}
               />
 
               <MarketChartPanel
                 selectedInstrument={instrument}
-                candles={candles}
-                quote={quote}
-                loading={candlesLoading}
-                error={candlesError}
+                candles={liveCandles}
+                quote={liveQuote}
+                loading={liveMarketLoading}
+                error={liveMarketError}
                 onRefresh={handleRefreshChart}
+                activity={liveMarketActivity}
               />
             </div>
 

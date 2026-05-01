@@ -28,3 +28,4 @@ dist/
 
 # Hermes local planning artifacts
 .hermes/
+.vercel

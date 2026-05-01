@@ -12,20 +12,17 @@ import { QuantSignalPanel } from '@/components/quant-signal-panel';
 import { QuotePanel } from '@/components/quote-panel';
 import {
   createOrder,
-  fetchCandles,
   fetchOrders,
   fetchPortfolioSummary,
   fetchPositions,
   fetchQuantSignal,
-  fetchQuote,
   searchInstruments,
 } from '@/lib/api';
 import { createSymbolRequestGuard } from '@/lib/request-guard';
 import { getInstrumentDetailHref } from '@/lib/instrument-detail-route';
+import { useLiveMarketSnapshot } from '@/lib/use-live-market-snapshot';
 import type {
   InstrumentSearchItem,
-  MarketCandleSeries,
-  MarketQuote,
   Order,
   PortfolioSummary,
   PositionItem,
@@ -60,6 +57,64 @@ const initialState: DashboardState = {
   orders: [],
 };
 
+type OverviewCardTone = 'default' | 'accent' | 'success';
+
+interface OverviewCardProps {
+  label: string;
+  value: string;
+  meta: string;
+  tone?: OverviewCardTone;
+  loading?: boolean;
+}
+
+function OverviewCard({ label, value, meta, tone = 'default', loading = false }: OverviewCardProps) {
+  return (
+    <div className={`overview-card overview-card-${tone}${loading ? ' is-loading' : ''}`}>
+      <div className="overview-label">{label}</div>
+      {loading ? (
+        <>
+          <div className="loading-bar loading-bar-lg" aria-hidden="true" />
+          <div className="loading-bar loading-bar-sm" aria-hidden="true" />
+        </>
+      ) : (
+        <>
+          <div className="overview-value">{value}</div>
+          <div className="overview-meta">{meta}</div>
+        </>
+      )}
+    </div>
+  );
+}
+
+interface StatePanelProps {
+  title: string;
+  message: string;
+  tone?: 'default' | 'error';
+  actionLabel?: string;
+  onAction?: () => void;
+  actionDisabled?: boolean;
+}
+
+function StatePanel({ title, message, tone = 'default', actionLabel, onAction, actionDisabled = false }: StatePanelProps) {
+  const className = tone === 'error' ? 'error-state state-panel' : 'empty-state state-panel';
+
+  return (
+    <div className={className}>
+      <div className="state-panel-copy">
+        <strong>{title}</strong>
+        <div>{message}</div>
+      </div>
+      {actionLabel && onAction ? (
+        <div className="state-panel-actions">
+          <button className="toolbar-button" type="button" onClick={onAction} disabled={actionDisabled}>
+            {actionLabel}
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export default function HomePage() {
   const [dashboard, setDashboard] = useState<DashboardState>(initialState);
   const [loading, setLoading] = useState(true);
@@ -73,19 +128,19 @@ export default function HomePage() {
   const [hasSearched, setHasSearched] = useState(false);
 
   const [selectedInstrument, setSelectedInstrument] = useState<InstrumentSearchItem | null>(null);
-  const [quote, setQuote] = useState<MarketQuote | null>(null);
-  const [quoteLoading, setQuoteLoading] = useState(false);
-  const [quoteError, setQuoteError] = useState<string | null>(null);
-  const [candles, setCandles] = useState<MarketCandleSeries | null>(null);
-  const [candlesLoading, setCandlesLoading] = useState(false);
-  const [candlesError, setCandlesError] = useState<string | null>(null);
   const [quantModeEnabled, setQuantModeEnabled] = useState(false);
   const [quantSignal, setQuantSignal] = useState<QuantSignal | null>(null);
   const [quantLoading, setQuantLoading] = useState(false);
   const [quantError, setQuantError] = useState<string | null>(null);
-  const quoteRequestGuardRef = useRef(createSymbolRequestGuard());
-  const candlesRequestGuardRef = useRef(createSymbolRequestGuard());
   const quantRequestGuardRef = useRef(createSymbolRequestGuard());
+  const {
+    activity: liveMarketActivity,
+    candles,
+    error: liveMarketError,
+    loading: liveMarketLoading,
+    quote,
+    refresh: refreshLiveMarket,
+  } = useLiveMarketSnapshot(selectedInstrument?.symbol ?? null);
 
   const formatCurrency = useCallback((value: number) => currencyFormatter.format(value), []);
   const formatNumber = useCallback((value: number) => numberFormatter.format(value), []);
@@ -123,82 +178,6 @@ export default function HomePage() {
     } finally {
       setLoading(false);
       setRefreshing(false);
-    }
-  }, []);
-
-  const loadQuote = useCallback(async (symbol: string) => {
-    const normalizedSymbol = symbol.trim().toUpperCase();
-
-    if (!normalizedSymbol) {
-      quoteRequestGuardRef.current.reset();
-      setQuote(null);
-      setQuoteLoading(false);
-      setQuoteError(null);
-      return;
-    }
-
-    const requestToken = quoteRequestGuardRef.current.begin(normalizedSymbol);
-
-    setQuoteLoading(true);
-    setQuote(null);
-    setQuoteError(null);
-
-    try {
-      const nextQuote = await fetchQuote(normalizedSymbol);
-      if (!quoteRequestGuardRef.current.isCurrent(requestToken)) {
-        return;
-      }
-
-      setQuote(nextQuote);
-    } catch (loadError) {
-      if (!quoteRequestGuardRef.current.isCurrent(requestToken)) {
-        return;
-      }
-
-      setQuote(null);
-      setQuoteError(loadError instanceof Error ? loadError.message : 'Unable to load quote.');
-    } finally {
-      if (quoteRequestGuardRef.current.isCurrent(requestToken)) {
-        setQuoteLoading(false);
-      }
-    }
-  }, []);
-
-  const loadCandles = useCallback(async (symbol: string) => {
-    const normalizedSymbol = symbol.trim().toUpperCase();
-
-    if (!normalizedSymbol) {
-      candlesRequestGuardRef.current.reset();
-      setCandles(null);
-      setCandlesLoading(false);
-      setCandlesError(null);
-      return;
-    }
-
-    const requestToken = candlesRequestGuardRef.current.begin(normalizedSymbol);
-
-    setCandlesLoading(true);
-    setCandles(null);
-    setCandlesError(null);
-
-    try {
-      const nextCandles = await fetchCandles(normalizedSymbol);
-      if (!candlesRequestGuardRef.current.isCurrent(requestToken)) {
-        return;
-      }
-
-      setCandles(nextCandles);
-    } catch (loadError) {
-      if (!candlesRequestGuardRef.current.isCurrent(requestToken)) {
-        return;
-      }
-
-      setCandles(null);
-      setCandlesError(loadError instanceof Error ? loadError.message : 'Unable to load candles.');
-    } finally {
-      if (candlesRequestGuardRef.current.isCurrent(requestToken)) {
-        setCandlesLoading(false);
-      }
     }
   }, []);
 
@@ -243,10 +222,6 @@ export default function HomePage() {
       }
     }
   }, [resetQuantSignal]);
-
-  const loadSelectedInstrumentMarketData = useCallback(async (symbol: string) => {
-    await Promise.all([loadQuote(symbol), loadCandles(symbol)]);
-  }, [loadCandles, loadQuote]);
 
   useEffect(() => {
     void loadDashboard(true);
@@ -294,24 +269,35 @@ export default function HomePage() {
 
   const handleSelectInstrument = useCallback((instrument: InstrumentSearchItem) => {
     setSelectedInstrument(instrument);
-    void loadSelectedInstrumentMarketData(instrument.symbol);
-  }, [loadSelectedInstrumentMarketData]);
+  }, []);
 
   const handleRefreshQuote = useCallback(() => {
     if (!selectedInstrument) {
       return;
     }
 
-    void loadQuote(selectedInstrument.symbol);
-  }, [loadQuote, selectedInstrument]);
+    void refreshLiveMarket();
+  }, [refreshLiveMarket, selectedInstrument]);
 
   const handleRefreshChart = useCallback(() => {
     if (!selectedInstrument) {
       return;
     }
 
-    void loadCandles(selectedInstrument.symbol);
-  }, [loadCandles, selectedInstrument]);
+    void refreshLiveMarket();
+  }, [refreshLiveMarket, selectedInstrument]);
+
+  const handleRefreshWorkspace = useCallback(() => {
+    void loadDashboard(false);
+
+    if (selectedInstrument) {
+      void refreshLiveMarket();
+
+      if (quantModeEnabled) {
+        void loadQuantSignal(selectedInstrument.symbol);
+      }
+    }
+  }, [loadDashboard, loadQuantSignal, quantModeEnabled, refreshLiveMarket, selectedInstrument]);
 
   const handleRefreshQuantSignal = useCallback(() => {
     if (!selectedInstrument || !quantModeEnabled) {
@@ -327,32 +313,124 @@ export default function HomePage() {
 
   const statusText = useMemo(() => {
     if (loading) {
-      return 'Loading dashboard…';
+      return 'Synchronizing portfolio summary, positions, and recent orders through the Next.js proxy.';
     }
     if (refreshing) {
-      return 'Refreshing data…';
+      return 'Refreshing portfolio, order, and market context from the backend.';
     }
     if (error) {
-      return 'Showing friendly empty state because the backend is unavailable or returned an error.';
+      return 'The frontend is still wired correctly, but one or more backend requests failed and the dashboard is showing fallback states.';
     }
-    return 'Connected to the backend API through the Next.js proxy route.';
+    return 'Connected to the backend API through the Next.js proxy route with dashboard data, live selected-symbol snapshots, and order entry enabled.';
   }, [error, loading, refreshing]);
+
+  const connectionBadgeClassName = loading || refreshing
+    ? 'status-chip status-chip-pending'
+    : error
+      ? 'status-chip status-chip-error'
+      : 'status-chip status-chip-success';
+  const connectionBadgeText = loading
+    ? 'Syncing dashboard'
+    : refreshing
+      ? 'Refreshing live data'
+      : error
+        ? 'Backend attention needed'
+        : 'Backend connected';
+  const quantBadgeClassName = quantModeEnabled
+    ? 'status-chip status-chip-accent'
+    : 'status-chip status-chip-muted';
+  const quantBadgeText = quantModeEnabled ? 'Quant mode enabled' : 'Quant mode optional';
 
   return (
     <main className="page-shell">
-      <header className="page-header">
-        <h1>QERP frontend MVP shell</h1>
-        <p>Minimal Next.js dashboard for portfolio visibility, market lookup, and order entry.</p>
+      <header className="page-header page-header-hero">
+        <div className="page-header-topline">
+          <span className="page-eyebrow">QERP trading workspace</span>
+          <div className="page-header-badges">
+            <span className={connectionBadgeClassName}>{connectionBadgeText}</span>
+            <span className={quantBadgeClassName}>{quantBadgeText}</span>
+          </div>
+        </div>
+
+        <div className="page-header-main">
+          <div className="page-header-copy">
+            <h1>Execution dashboard</h1>
+            <p>
+              Portfolio visibility, instrument discovery, market context, quant overlays, and order entry in a
+              cleaner production-style workflow.
+            </p>
+          </div>
+
+          <div className="page-header-actions">
+            <button
+              className="toolbar-button toolbar-button-primary"
+              type="button"
+              onClick={handleRefreshWorkspace}
+              disabled={loading || refreshing}
+            >
+              {refreshing ? 'Refreshing…' : 'Refresh workspace'}
+            </button>
+          </div>
+        </div>
+
+        <div className="overview-grid">
+          <OverviewCard
+            label="Portfolio value"
+            value={dashboard.summary ? formatCurrency(dashboard.summary.totalPortfolioValue) : 'Unavailable'}
+            meta={dashboard.summary ? `As of ${new Date(dashboard.summary.asOf).toLocaleString()}` : 'Waiting for a backend snapshot.'}
+            tone="accent"
+            loading={loading}
+          />
+          <OverviewCard
+            label="Open positions"
+            value={formatNumber(dashboard.positions.length)}
+            meta={dashboard.positions.length > 0 ? 'Active holdings across the account.' : 'No open holdings returned yet.'}
+            loading={loading}
+          />
+          <OverviewCard
+            label="Recent orders"
+            value={formatNumber(dashboard.orders.length)}
+            meta={dashboard.orders.length > 0 ? 'Latest backend orders ready for review.' : 'No recent orders returned yet.'}
+            loading={loading}
+          />
+          <OverviewCard
+            label="Selected symbol"
+            value={selectedInstrument?.symbol ?? 'Awaiting selection'}
+            meta={selectedInstrument ? `${selectedInstrument.exchange} · ${selectedInstrument.assetType}` : 'Search for an instrument to activate quote, chart, and order context.'}
+            tone={selectedInstrument ? 'success' : 'default'}
+          />
+        </div>
       </header>
 
       <div className="layout-grid">
         <div className="stack">
-          {error ? (
+          {loading ? (
             <section className="panel">
-              <div className="error-state">
-                <strong>Backend not available</strong>
-                <div>{error}</div>
+              <div className="panel-header">
+                <div>
+                  <h2>Portfolio summary</h2>
+                  <p>Loading the latest account snapshot.</p>
+                </div>
               </div>
+              <div className="summary-grid">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <div key={`summary-loading-${index}`} className="summary-card summary-card-loading" aria-hidden="true">
+                    <div className="loading-bar loading-bar-sm" />
+                    <div className="loading-bar loading-bar-md" />
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : error ? (
+            <section className="panel">
+              <StatePanel
+                title="Backend not available"
+                message={error}
+                tone="error"
+                actionLabel={refreshing ? 'Refreshing…' : 'Try again'}
+                onAction={() => void loadDashboard(false)}
+                actionDisabled={refreshing}
+              />
             </section>
           ) : dashboard.summary ? (
             <PortfolioSummarySection
@@ -362,7 +440,13 @@ export default function HomePage() {
             />
           ) : (
             <section className="panel">
-              <div className="empty-state">Portfolio summary is not available yet.</div>
+              <StatePanel
+                title="Portfolio snapshot unavailable"
+                message="The backend responded without a portfolio summary. Refresh the workspace or verify seeded data exists."
+                actionLabel={refreshing ? 'Refreshing…' : 'Refresh workspace'}
+                onAction={() => void loadDashboard(false)}
+                actionDisabled={refreshing}
+              />
             </section>
           )}
 
@@ -372,17 +456,33 @@ export default function HomePage() {
             formatCurrency={formatCurrency}
             formatNumber={formatNumber}
             formatPercent={formatPercent}
+            loading={loading}
+            emptyMessage={
+              error
+                ? 'Waiting for a fresh positions snapshot once the backend reconnects.'
+                : 'No open positions yet.'
+            }
           />
 
-          <OrderList orders={dashboard.orders} formatCurrency={formatCurrency} formatNumber={formatNumber} />
+          <OrderList
+            orders={dashboard.orders}
+            formatCurrency={formatCurrency}
+            formatNumber={formatNumber}
+            loading={loading}
+            emptyMessage={
+              error
+                ? 'Recent orders will appear here once the backend reconnects.'
+                : 'No orders submitted yet.'
+            }
+          />
         </div>
 
         <div className="stack">
           <section className="panel">
             <div className="panel-header">
               <div>
-                <h2>Mode</h2>
-                <p>Enable backend quant mode for the selected symbol.</p>
+                <h2>Workspace mode</h2>
+                <p>Keep quant assistance opt-in while preserving the existing symbol-driven workflow.</p>
               </div>
             </div>
             <label className="mode-toggle" htmlFor="quant-mode-toggle">
@@ -413,10 +513,11 @@ export default function HomePage() {
           <QuotePanel
             selectedInstrument={selectedInstrument}
             quote={quote}
-            loading={quoteLoading}
-            error={quoteError}
+            loading={liveMarketLoading}
+            error={liveMarketError}
             onRefreshQuote={handleRefreshQuote}
             detailHref={getInstrumentDetailHref(selectedInstrument?.symbol)}
+            activity={liveMarketActivity}
           />
 
           {quantModeEnabled ? (
@@ -434,9 +535,10 @@ export default function HomePage() {
             selectedInstrument={selectedInstrument}
             candles={candles}
             quote={quote}
-            loading={candlesLoading}
-            error={candlesError}
+            loading={liveMarketLoading}
+            error={liveMarketError}
             onRefresh={handleRefreshChart}
+            activity={liveMarketActivity}
           />
 
           <OrderForm
@@ -453,11 +555,15 @@ export default function HomePage() {
                 <h2>Connection</h2>
                 <p>Backend base URL defaults to localhost in local dev and the live Render backend on Vercel.</p>
               </div>
-              <button className="toolbar-button" type="button" onClick={() => void loadDashboard(false)} disabled={loading || refreshing}>
-                {refreshing ? 'Refreshing…' : 'Refresh'}
-              </button>
+              <span className={connectionBadgeClassName}>{connectionBadgeText}</span>
             </div>
-            <div className="status-note">{statusText}</div>
+            <div className="status-stack">
+              <div className="status-note">{statusText}</div>
+              <div className="status-note status-note-subtle">
+                Portfolio and order traffic continue to use the existing API contract and proxy wiring, while the
+                selected symbol now polls the live snapshot endpoint whenever this tab is visible.
+              </div>
+            </div>
           </section>
         </div>
       </div>

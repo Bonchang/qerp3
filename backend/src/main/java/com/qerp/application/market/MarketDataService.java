@@ -15,6 +15,8 @@ public interface MarketDataService {
 
     Optional<MarketCandleSeries> getCandles(String symbol, String interval, int limit);
 
+    Optional<LiveMarketSnapshot> getLiveSnapshot(String symbol, int limit);
+
     Optional<BigDecimal> getReferencePrice(String symbol);
 
     Map<String, BigDecimal> getAllReferencePrices();

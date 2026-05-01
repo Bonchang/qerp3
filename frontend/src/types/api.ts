@@ -78,6 +78,14 @@ export interface MarketCandleSeries {
   items: MarketCandle[];
 }
 
+export interface LiveMarketSnapshot {
+  symbol: string;
+  live: boolean;
+  generatedAt: string;
+  quote: MarketQuote;
+  candles: MarketCandleSeries;
+}
+
 export interface Order {
   orderId: string;
   symbol: string;

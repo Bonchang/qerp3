@@ -3,6 +3,7 @@ import {
   CreateOrderInput,
   InstrumentSearchItem,
   InstrumentSearchResponse,
+  LiveMarketSnapshot,
   MarketCandleSeries,
   MarketQuote,
   OrderListResponse,
@@ -153,6 +154,20 @@ export async function fetchCandles(symbol: string, interval = '1D', limit = 30):
   });
 
   return request<MarketCandleSeries>(`/market/candles/${encodeURIComponent(normalizedSymbol)}?${params.toString()}`);
+}
+
+export async function fetchLiveMarketSnapshot(symbol: string, limit = 30): Promise<LiveMarketSnapshot> {
+  const normalizedSymbol = symbol.trim().toUpperCase();
+
+  if (!normalizedSymbol) {
+    throw new Error('Symbol is required.');
+  }
+
+  const params = new URLSearchParams({
+    limit: String(limit),
+  });
+
+  return request<LiveMarketSnapshot>(`/market/live/${encodeURIComponent(normalizedSymbol)}?${params.toString()}`);
 }
 
 export async function fetchQuantSignal(symbol: string, thresholdPercent?: number): Promise<QuantSignal> {

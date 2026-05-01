@@ -4,9 +4,11 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -22,6 +24,7 @@ public class InMemoryMarketDataService implements MarketDataService {
     private static final Instant QUOTE_AS_OF = Instant.parse("2026-04-22T13:30:00Z");
     private static final LocalDate DAILY_CANDLE_END_DATE = LocalDate.of(2026, 4, 22);
     private static final String DAILY_INTERVAL = "1D";
+    private static final String LIVE_INTERVAL = "1m";
     private static final int DAILY_CANDLE_COUNT = 60;
     private static final int MAX_CANDLE_LIMIT = 60;
     private static final Pattern SYMBOL_PATTERN = Pattern.compile("^[A-Z0-9.]{1,15}$");
@@ -42,6 +45,15 @@ public class InMemoryMarketDataService implements MarketDataService {
     private final Map<String, MarketQuote> quotesBySymbol = buildQuotes();
     private final Map<String, List<MarketCandle>> dailyCandlesBySymbol = buildDailyCandles();
     private final Map<String, BigDecimal> referencePrices = buildReferencePrices();
+    private final Clock clock;
+
+    public InMemoryMarketDataService() {
+        this(Clock.systemUTC());
+    }
+
+    InMemoryMarketDataService(Clock clock) {
+        this.clock = clock;
+    }
 
     @Override
     public List<Instrument> searchInstruments(String query, int limit) {
@@ -90,6 +102,53 @@ public class InMemoryMarketDataService implements MarketDataService {
                 normalizedSymbol,
                 normalizedInterval,
                 List.copyOf(candles.subList(fromIndex, candles.size()))
+        ));
+    }
+
+    @Override
+    public Optional<LiveMarketSnapshot> getLiveSnapshot(String symbol, int limit) {
+        if (limit < 1) {
+            throw new IllegalArgumentException("limit must be greater than 0");
+        }
+        if (limit > MAX_CANDLE_LIMIT) {
+            throw new IllegalArgumentException("limit must be less than or equal to 60");
+        }
+
+        String normalizedSymbol = normalizeSymbol(symbol);
+        MarketQuote baseQuote = quotesBySymbol.get(normalizedSymbol);
+        if (baseQuote == null) {
+            return Optional.empty();
+        }
+
+        Instant asOf = Instant.now(clock).truncatedTo(ChronoUnit.SECONDS);
+        List<MarketCandle> liveCandles = buildLiveCandles(normalizedSymbol, baseQuote, asOf, limit);
+        MarketCandle latestCandle = liveCandles.getLast();
+
+        BigDecimal previousClose = baseQuote.price().subtract(baseQuote.change());
+        BigDecimal livePrice = latestCandle.close();
+        BigDecimal liveChange = livePrice.subtract(previousClose).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal liveChangePercent = previousClose.compareTo(BigDecimal.ZERO) == 0
+                ? BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP)
+                : liveChange
+                .divide(previousClose, 6, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100))
+                .setScale(2, RoundingMode.HALF_UP);
+
+        MarketQuote liveQuote = new MarketQuote(
+                normalizedSymbol,
+                livePrice,
+                baseQuote.currency(),
+                liveChange,
+                liveChangePercent,
+                asOf
+        );
+
+        return Optional.of(new LiveMarketSnapshot(
+                normalizedSymbol,
+                true,
+                asOf,
+                liveQuote,
+                new MarketCandleSeries(normalizedSymbol, LIVE_INTERVAL, liveCandles)
         ));
     }
 
@@ -174,6 +233,60 @@ public class InMemoryMarketDataService implements MarketDataService {
         }
 
         return List.copyOf(candles);
+    }
+
+    private List<MarketCandle> buildLiveCandles(String symbol, MarketQuote baseQuote, Instant asOf, int limit) {
+        int seed = symbolSeed(symbol);
+        double basePrice = baseQuote.price().doubleValue();
+        Instant currentMinute = asOf.truncatedTo(ChronoUnit.MINUTES);
+        double currentSecond = (asOf.getEpochSecond() - currentMinute.getEpochSecond()) + (asOf.getNano() / 1_000_000_000.0);
+        double liveMinuteProgress = Math.max(0.03, Math.min(currentSecond / 60.0, 0.995));
+
+        List<MarketCandle> candles = new ArrayList<>(limit);
+        for (int index = 0; index < limit; index++) {
+            boolean liveCandle = index == limit - 1;
+            Instant candleTimestamp = currentMinute.minus(limit - 1L - index, ChronoUnit.MINUTES);
+
+            double openSample = liveCandle ? 0.02 : 0.08;
+            double midSample = liveCandle ? Math.max(0.18, liveMinuteProgress * 0.55) : 0.52;
+            double closeSample = liveCandle ? liveMinuteProgress : 0.98;
+
+            double open = syntheticLivePrice(basePrice, seed, candleTimestamp, openSample);
+            double midpoint = syntheticLivePrice(basePrice, seed, candleTimestamp, midSample);
+            double close = syntheticLivePrice(basePrice, seed, candleTimestamp, closeSample);
+
+            double wickBase = Math.max(0.04, basePrice * (0.0009 + ((seed + index) % 5) * 0.00014));
+            double wickPulse = Math.abs(Math.sin((candleTimestamp.getEpochSecond() / 37.0) + seed)) * basePrice * 0.00065;
+            double wick = wickBase + wickPulse;
+            double high = Math.max(Math.max(open, close), midpoint) + wick;
+            double low = Math.max(0.01, Math.min(Math.min(open, close), midpoint) - (wick * 0.94));
+            double volumeProgress = liveCandle ? Math.max(liveMinuteProgress, 0.12) : 1.0;
+            long volume = Math.round((95_000L
+                    + (long) (seed % 70) * 4_200L
+                    + (long) index * 2_350L
+                    + Math.round(Math.abs(Math.cos((index + 1) * 0.49 + seed)) * 18_000L)) * volumeProgress);
+
+            candles.add(new MarketCandle(
+                    candleTimestamp,
+                    money(open),
+                    money(high),
+                    money(low),
+                    money(close),
+                    volume
+            ));
+        }
+
+        return List.copyOf(candles);
+    }
+
+    private double syntheticLivePrice(double basePrice, int seed, Instant candleTimestamp, double minuteProgress) {
+        double boundedProgress = Math.max(0.0, Math.min(minuteProgress, 0.999));
+        long epochSecond = candleTimestamp.getEpochSecond() + Math.round(59 * boundedProgress);
+        double primaryWave = Math.sin((epochSecond + seed) / 7.5) * basePrice * 0.0018;
+        double secondaryWave = Math.cos((epochSecond + (seed * 3L)) / 19.0) * basePrice * 0.0012;
+        double intradayDrift = Math.sin((epochSecond / 300.0) + (seed * 0.17)) * basePrice * 0.0028;
+        double sessionBias = Math.cos((epochSecond / 1800.0) + (seed * 0.03)) * basePrice * 0.0015;
+        return Math.max(1.0, basePrice + primaryWave + secondaryWave + intradayDrift + sessionBias);
     }
 
     private Map<String, BigDecimal> buildReferencePrices() {
